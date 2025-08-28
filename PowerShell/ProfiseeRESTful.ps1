@@ -160,6 +160,28 @@ class ProfiseeRestful {
                 return $this.LastResponse;
             });
     }
+
+    [object] RunConnectBatch($strategyName, $filter = "", $recordCodes = @()) {
+        $this.LogMessage("GetConnectStrategy($($strategyName))", [LogType]::Info);
+
+        $body = @{
+            FilterExpression = $filter
+            Codes = $recordCodes
+        }
+    
+        return $this.WrapWithTryCatch({
+                $this.LastResponse = Invoke-RestMethod -Uri $this.GetProfiseeRESTfulUri("Connect/Strategies/$($strategyName)/Batch") `
+                    -Method POST `
+                    -Headers $this.GetProfiseeRESTfulHeader() `
+                    -Body (ConvertTo-Json $body)
+                $this.LogMessage("   Method = POST", [LogType]::Debug);
+                $this.LogMessage("   Response = '$($this.LastResponse)'", [LogType]::Debug);
+                $this.DumpProfiseeErrors();
+                #$this.DumpProfiseeData();
+    
+                return $this.LastResponse;
+            });
+    }
     
     #########################################################################
     # AddressVerificationStrategies
