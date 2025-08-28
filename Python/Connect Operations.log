@@ -1,0 +1,7 @@
+2025-08-27 07:55:11,762 INFO : Running c:\Users\detlefgr\source\GitHub\Profisee\Python\Connect Operations.py
+2025-08-27 07:55:11,762 INFO : Connecting to 'https://corpltr16.corp.profisee.com/profisee25r2'
+2025-08-27 07:55:11,762 INFO : CallAPI(<RequestOperation.Post: 2>, 'https://corpltr16.corp.profisee.com/profisee25r2/rest/v1/Connect/Strategies/MelissaData Personator Name Strategy/Batch', 'json': {'FilterExpression': '', 'Codes': [])
+2025-08-27 07:55:11,764 DEBUG : Starting new HTTPS connection (1): corpltr16.corp.profisee.com:443
+2025-08-27 07:55:12,281 DEBUG : https://corpltr16.corp.profisee.com:443 "POST /profisee25r2/rest/v1/Connect/Strategies/MelissaData%20Personator%20Name%20Strategy/Batch HTTP/1.1" 200 62
+2025-08-27 07:55:12,281 DEBUG : response : statusCode = 200 text = '{"batchId":{"code":"28"},"statusCode":200,"problemDetails":[]}'
+2025-08-27 07:55:12,311 DEBUG : returnValue = '{'batchId': {'code': '28'}, 'statusCode': 200, 'problemDetails': []}'

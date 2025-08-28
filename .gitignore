@@ -1,0 +1,7 @@
+CSharp/Profisee/.vs
+CSharp/Profisee/RestfulAPI/bin
+CSharp/Profisee/RestfulAPI/obj
+CSharp/Profisee/UnitTests/bin
+CSharp/Profisee/UnitTests/obj
+Python/Profisee/__pycache__
+Python/Profisee/Restful/__pycache__
