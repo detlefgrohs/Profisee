@@ -11,11 +11,11 @@ $restfulAPI = [ProfiseeRestful]::new($Environment);
 
 
 
-$restfulAPI.RunConnectBatch("SQL Server [Test] Export [dbo].[tbl_Test]", "", @( ))
+# $restfulAPI.RunConnectBatch("SQL Server [Test] Export [dbo].[tbl_Test]", "", @( ))
 
 # $restfulAPI.RunConnectBatch("SQL Server [Test] Export [dbo].[tbl_Test]", "", @( "*Test" ))
 
-# $restfulAPI.RunConnectBatch("SQL Server [Test] Export [dbo].[tbl_Test]", '[Test].[DBAAttribute] = "Y"', @( ))
+$restfulAPI.RunConnectBatch("SQL Server [Test] Export [dbo].[tbl_Test]", 'CHANGED( [Test].[Test] )', @( ))
 
 
 

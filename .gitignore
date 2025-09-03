@@ -5,3 +5,5 @@ CSharp/Profisee/UnitTests/bin
 CSharp/Profisee/UnitTests/obj
 Python/Profisee/__pycache__
 Python/Profisee/Restful/__pycache__
+
+PowerShell/ProfiseeRESTful.log
