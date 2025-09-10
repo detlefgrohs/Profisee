@@ -1,4 +1,4 @@
-import logging, json, os
+import logging, json, os, uuid
 from Profisee import Restful
 
 instance_name = "Local"
@@ -16,6 +16,10 @@ profisee_settings = settings[instance_name]
 print(f"Connecting to '{profisee_settings["ProfiseeUrl"]}'")
 logger.info(f"Connecting to '{profisee_settings["ProfiseeUrl"]}'")
 api = Restful.API(profisee_settings["ProfiseeUrl"], profisee_settings["ClientId"], verify = False)
+
+service_configuration_name = "SQL Server Configuration - Local"
+service_configuration_id = "9c8449a1-be87-4644-a62d-d3c1f87c5b6d"
+run_as_user = "corp\\detlefgr"
 
 entities = api.GetEntities()
 only_entity_names = [ "Test" ]
@@ -68,8 +72,8 @@ for entity in entities:
                     },
                     "serviceConfigurationId": {
                         "$type": "Profisee.Platform.Cdp.Contracts.Identifier, Profisee.Platform.Cdp",
-                        "id": "9c8449a1-be87-4644-a62d-d3c1f87c5b6d",
-                        "name": "SQL Server Configuration - Local"
+                        "id": service_configuration_id,
+                        "name": service_configuration_name
                     },
                     "integrationFlow": "Export",
                     "databaseType": "SqlServer",
@@ -89,7 +93,7 @@ for entity in entities:
                             "dataType": 2
                         }
                     },
-                    "runAsUser": "corp\\detlefgr",
+                    "runAsUser": run_as_user,
                     "maximumRecordsPerJob": 1000,
                     "triggeringRules": {
                         "$type": "Profisee.Platform.ConnEx.Contracts.Administration.IntegrationStrategyTriggeringRuleCollection, Profisee.Platform.ConnEx",
@@ -116,7 +120,7 @@ for entity in entities:
                     },
                     "artifactVersion": "1.3.1.0"                
                 },
-                "Id": "ffb7bf75-e5ce-48b0-a4ab-fba429c5e6e7",
+                "Id": str(uuid.uuid4()),
                 "Name": f"SQL Server [{entity_name}] Export [dbo].[tbl_{entity_name}]",
                 "Type": "Database"
             }    
@@ -139,8 +143,8 @@ for entity in entities:
                     },
                     "serviceConfigurationId": {
                         "$type": "Profisee.Platform.Cdp.Contracts.Identifier, Profisee.Platform.Cdp",
-                        "id": "9c8449a1-be87-4644-a62d-d3c1f87c5b6d",
-                        "name": "SQL Server Configuration - Local"
+                        "id": service_configuration_id,
+                        "name": service_configuration_name
                     },
                     "integrationFlow": "Import",
                     "databaseType": "SqlServer",
@@ -160,7 +164,7 @@ for entity in entities:
                             "dataType": 2
                         }
                     },
-                    "runAsUser": "corp\\detlefgr",
+                    "runAsUser": run_as_user,
                     "maximumRecordsPerJob": 1000,
                     "triggeringRules": {
                         "$type": "Profisee.Platform.ConnEx.Contracts.Administration.IntegrationStrategyTriggeringRuleCollection, Profisee.Platform.ConnEx",
@@ -187,7 +191,7 @@ for entity in entities:
                     },
                     "artifactVersion": "1.3.1.0"
                 },
-                "Id": "21b75f6d-45c3-48b6-a294-cecb5e3eccc4",
+                "Id": str(uuid.uuid4()),
                 "Name": f"SQL Server [dbo].[tbl_{entity_name}] Import [{entity_name}]",
                 "Type": "Database"
             }

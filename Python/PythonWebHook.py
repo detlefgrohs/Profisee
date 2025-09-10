@@ -45,6 +45,8 @@ async def TestWorkflowActivity(request: Dict[str, Any]):
             
             testFlowMessage = "Test logic executed. Your input: " + input + ". Are other connections and data valid: " + str(result)
                                             
+            print(testFlowMessage)
+                                            
     returnValue = { "ProcessingStatus" : 0,
                     "ResponsePayload" :
                         { 
