@@ -45,14 +45,6 @@
                                 },
                                 "dataType": 1
                             },
-                            "[Test].[Test|e096cf77-d92a-4976-99c5-dea468d85b72]": {
-                                "assignmentType": "Expression",
-                                "value": {
-                                    "name": "Test",
-                                    "expressionText": "[tbl_Test].[Test]"
-                                },
-                                "dataType": 1
-                            },
                             "[Test].[Test2|865aa59e-a411-45c9-b78a-4f9b028e1ac7]": {
                                 "assignmentType": "Expression",
                                 "value": {
@@ -69,14 +61,6 @@
                                 },
                                 "dataType": 1
                             },
-                            "[Test].[DateTimeAttribute|fb340033-db35-441c-a3fd-6c4aeb7a75aa]": {
-                                "assignmentType": "Expression",
-                                "value": {
-                                    "name": "DateTimeAttribute",
-                                    "expressionText": "[tbl_Test].[DateTimeAttribute]"
-                                },
-                                "dataType": 1
-                            },
                             "[Test].[DBAAttribute|3c200597-349c-4e56-8734-4ecb8b65173a]": {
                                 "assignmentType": "Expression",
                                 "value": {
@@ -90,6 +74,22 @@
                                 "value": {
                                     "name": "NumberAttribute",
                                     "expressionText": "[tbl_Test].[NumberAttribute]"
+                                },
+                                "dataType": 1
+                            },
+                            "[Test].[Test|238b1113-6868-4316-903f-abec18706d4a]": {
+                                "assignmentType": "Expression",
+                                "value": {
+                                    "name": "Test",
+                                    "expressionText": "[tbl_Test].[Test]"
+                                },
+                                "dataType": 1
+                            },
+                            "[Test].[DateTimeAttribute|8c2b0b08-ec92-4621-ae2e-1bc7a43caebb]": {
+                                "assignmentType": "Expression",
+                                "value": {
+                                    "name": "DateTimeAttribute",
+                                    "expressionText": "[tbl_Test].[DateTimeAttribute]"
                                 },
                                 "dataType": 1
                             }
@@ -125,7 +125,7 @@
             },
             "artifactVersion": "1.3.1.0"
         },
-        "Id": "6a136879-663a-4a6b-9d36-131d74304486",
+        "Id": "ba75a2a7-6984-48fe-bcaa-9c7d690ed58b",
         "Name": "SQL Server [dbo].[tbl_Test] Import [Test]",
         "Type": "Database"
     }

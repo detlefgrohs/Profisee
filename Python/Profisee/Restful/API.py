@@ -18,10 +18,10 @@ class API() :
         self.ProfiseeUrl = profiseeUrl
         self.ClientId = clientId
         self.SetResponseHandlers()
-        self.Verify = verify
+        self.VerifySSL = verify
         self.LastResponse = None
         self.StatusCode = None
-        if self.Verify == False : urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
+        if self.VerifySSL == False : urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
         
     # def GetLastResponse(self) :
     #     return self.LastResponse
@@ -136,15 +136,15 @@ class API() :
         """
         match requestOperation :
             case RequestOperation.Get :
-                return self.CheckResponse(requests.get(url, json = json, headers = self.GetHeaders(), verify = self.Verify))
+                return self.CheckResponse(requests.get(url, json = json, headers = self.GetHeaders(), verify = self.VerifySSL))
             case RequestOperation.Put :
-                return self.CheckResponse(requests.put(url, json = json, headers = self.GetHeaders(), verify = self.Verify))
+                return self.CheckResponse(requests.put(url, json = json, headers = self.GetHeaders(), verify = self.VerifySSL))
             case RequestOperation.Post :
-                return self.CheckResponse(requests.post(url, json = json, headers = self.GetHeaders(), verify = self.Verify)) 
+                return self.CheckResponse(requests.post(url, json = json, headers = self.GetHeaders(), verify = self.VerifySSL)) 
             case RequestOperation.Patch :
-                return self.CheckResponse(requests.patch(url, json = json, headers = self.GetHeaders(), verify = self.Verify))
+                return self.CheckResponse(requests.patch(url, json = json, headers = self.GetHeaders(), verify = self.VerifySSL))
             case RequestOperation.Delete :
-                return self.CheckResponse(requests.delete(url, json = json, headers = self.GetHeaders(), verify = self.Verify))
+                return self.CheckResponse(requests.delete(url, json = json, headers = self.GetHeaders(), verify = self.VerifySSL))
 
 # Helper Methods
     def ChangeAttributeName(self, entityName, oldAttributeName, newAttributeName) :
@@ -207,7 +207,7 @@ class API() :
         Returns:
             dictionary: Attribute creation information
         """
-        return self.CheckResponse(requests.post(f"{self.ProfiseeUrl}/rest/v1/Attributes", json = attributes, headers = self.GetHeaders(), verify = self.Verify))
+        return self.CheckResponse(requests.post(f"{self.ProfiseeUrl}/rest/v1/Attributes", json = attributes, headers = self.GetHeaders(), verify = self.VerifySSL))
 
     @Common.LogFunction
     def UpdateAttribute(self, attribute) :
@@ -269,7 +269,7 @@ class API() :
     # GET     GetEntity(entityName)
 
     def CreateEntity(self, entity) :
-        return self.CheckResponse(requests.post(f"{self.ProfiseeUrl}/rest/v1/Entities", json = [entity], headers = self.GetHeaders(), verify = self.Verify))
+        return self.CheckResponse(requests.post(f"{self.ProfiseeUrl}/rest/v1/Entities", json = [entity], headers = self.GetHeaders(), verify = self.VerifySSL))
     
     def UpdateEntity(self, entity) :
         raise NotImplementedError("UpdateEntity not implemented yet...")    

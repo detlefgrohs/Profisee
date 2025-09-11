@@ -1,6 +1,8 @@
 import uuid, logging
 from functools import wraps
 
+from pyparsing import Any
+
 null_guid = uuid.UUID('{00000000-0000-0000-0000-000000000000}')
 
 class Common() :
@@ -59,7 +61,7 @@ class Common() :
             else           : node[name] = value
         
     @staticmethod
-    def Get(node, name) :
+    def Get(node, name: str, default: Any = None) -> Any :
         """_summary_
 
         Args:
@@ -69,7 +71,17 @@ class Common() :
         Returns:
             _type_: _description_
         """
-        if node != None :
-            key = Common.__first(node.keys(), lambda k : k.lower() == name.lower())
-            if key != None : return node[key]
-        return None 
+        # if node != None :
+        #     key = Common.__first(node.keys(), lambda k : k.lower() == name.lower())
+        #     if key != None : return node[key]
+        # return default 
+    
+        if node == None: return default
+
+        if "/" in name: # Handle Paths
+            for name in name.split("/"):
+                node = Common.Get(node, name)
+            return node if node != None else default         
+        else:    
+            key = Common.__first(node.keys(), lambda k: k.lower() == name.lower())
+            return node[key] if key!= None else default

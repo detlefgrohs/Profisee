@@ -133,7 +133,8 @@ class EventLogViewer(App):
             self.sub_title = f"API({self.api.ProfiseeUrl}, {self.api.ClientId}, {self.api.VerifySSL})"
 
 if __name__ == "__main__":
-    settings = json.load(open(r"settings.json"))    
+    instance_name = "Local"
+    settings = json.load(open(r"settings.json"))[instance_name]
     profisee_url = settings.get("ProfiseeUrl", None)
     client_id = settings.get("ClientId", None)
     verify_ssl = settings.get("VerifySSL", True)    
