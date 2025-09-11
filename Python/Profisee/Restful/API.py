@@ -33,6 +33,7 @@ class API() :
             ("UpdateMatchingStrategy", 204) : lambda response : self.SuccessHandler(response, "Success - Successfully updated the continuous matching setting of the matching strategy."),
 
             (None, 200) : lambda response : self.SuccessDataHandler(response),
+            (None, 201) : lambda response : self.SuccessDataHandler(response),
             
             (None, 400) : lambda response : self.ErrorHandler(response, "Bad Request - One or more validation errors occurred."),
             (None, 401) : lambda response : self.ErrorHandler(response, "Not Authorized - You are not authorized to access this resource."),
