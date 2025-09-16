@@ -7,7 +7,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 
 
-api = API("https://corpltr16.corp.profisee.com/profisee25r2", "0741a8cbebe54c2eae3d3b5cc4f49600", verify=False)
+api = API("https://corpltr16.corp.profisee.com/profisee25r2", "0741a8cbebe54c2eae3d3b5cc4f49600", False)
 app = FastAPI(openapi_url="/Python/openapi.json")
 app.add_middleware(
                     CORSMiddleware,

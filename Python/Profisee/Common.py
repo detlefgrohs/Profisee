@@ -1,6 +1,7 @@
 import uuid, logging
 from functools import wraps
 
+from more_itertools import strip
 from pyparsing import Any
 
 null_guid = uuid.UUID('{00000000-0000-0000-0000-000000000000}')
@@ -76,10 +77,12 @@ class Common() :
         #     if key != None : return node[key]
         # return default 
     
-        if node == None: return default
+        if node is None: return default
 
-        if "/" in name: # Handle Paths
-            for name in name.split("/"):
+        name = name.replace("/", ".").replace("\\", ".")
+
+        if "." in name:
+            for name in name.split("."):
                 node = Common.Get(node, name)
             return node if node != None else default         
         else:    

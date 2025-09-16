@@ -16,7 +16,7 @@ profisee_settings = settings[instance_name]
 
 print(f"Connecting to '{profisee_settings["ProfiseeUrl"]}'")
 logger.info(f"Connecting to '{profisee_settings["ProfiseeUrl"]}'")
-api = Restful.API(profisee_settings["ProfiseeUrl"], profisee_settings["ClientId"], verify = False)
+api = Restful.API(profisee_settings["ProfiseeUrl"], profisee_settings["ClientId"], verify_ssl= False)
 
 entity_name = 'WorkareaAttributeChange'
 attribute_name = 'StoreId'

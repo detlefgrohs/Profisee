@@ -1,5 +1,7 @@
 import requests, inspect, logging
 import urllib3
+from urllib.parse import urljoin
+from typing import Any, Dict
 
 from Profisee.Restful.GetOptions import GetOptions
 from Profisee.Common import Common
@@ -8,20 +10,22 @@ from Profisee.Restful.Enums import ProcessActions, MatchingStatus, RequestOperat
 class API() :
     """Class to handle requests and responses from the Profisee Restful API.
     """
-    def __init__(self, profiseeUrl, clientId, verify = True):
+    def __init__(self, profisee_url, client_id, verify_ssl = True) -> None:
         """Constructor for Restful API. Sets connection and response handlers.
 
         Args:
             profiseeUrl (string): URL to Profisee instance.
             clientId (string): Client ID to access Profisee instance.
         """
-        self.ProfiseeUrl = profiseeUrl
-        self.ClientId = clientId
+        self.ProfiseeUrl = profisee_url
+        self.ClientId = client_id
         self.SetResponseHandlers()
-        self.VerifySSL = verify
+        self.VerifySSL = verify_ssl
         self.LastResponse = None
         self.StatusCode = None
+        
         if self.VerifySSL == False : urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
+        if not self.ProfiseeUrl.endswith("/") : self.ProfiseeUrl += "/" # Ensure that the URL ends with a /
         
     # def GetLastResponse(self) :
     #     return self.LastResponse
@@ -34,6 +38,7 @@ class API() :
 
             (None, 200) : lambda response : self.SuccessDataHandler(response),
             (None, 201) : lambda response : self.SuccessDataHandler(response),
+            (None, 207) : lambda response : self.SuccessDataHandler(response), # Success with some errors....
             
             (None, 400) : lambda response : self.ErrorHandler(response, "Bad Request - One or more validation errors occurred."),
             (None, 401) : lambda response : self.ErrorHandler(response, "Not Authorized - You are not authorized to access this resource."),
@@ -52,7 +57,7 @@ class API() :
             "x-api-key" : self.ClientId
         }
         
-    def CheckResponse(self, response) :
+    def CheckResponse(self, response) -> Any:
         """Checks response against ResponseHandlers and creates modified response as needed.
 
         Args:
@@ -79,7 +84,7 @@ class API() :
         return returnValue
 
     # Response Handlers
-    def SuccessHandler(self, response, message) :
+    def SuccessHandler(self, response: dict[str, Any], message: str) -> dict[str, Any]:
         """Handle success response that does not have data.
 
         Args:
@@ -89,12 +94,13 @@ class API() :
         Returns:
             dictionary: modified response with status code and message.
         """
+        self.errors = None
         return { 
             "StatusCode" : response.status_code,
             "Message" : message
         }
-    
-    def SuccessDataHandler(self, response) :
+
+    def SuccessDataHandler(self, response: dict[str, Any]) -> dict[str, Any]:
         """Handle success response that returns data from original response
 
         Args:
@@ -104,10 +110,10 @@ class API() :
             dictionary: modified response with the data from original response
         """
         json = self.LastResponse.json()
-        if Common.Get(json, "data") != None : return json['data']
-        else                                : return json
-        
-    def ErrorHandler(self, response, message) :
+        self.errors = Common.Get(json, "errors", None)
+        return json['data'] if Common.Get(json, "data") != None else json
+
+    def ErrorHandler(self, response: dict[str, Any], message: str) -> dict[str, Any]:
         """_summary_
 
         Args:
@@ -117,6 +123,7 @@ class API() :
         Returns:
             dictionary: modified response with status code, message and original error from response
         """
+        self.errors = { response.status_code : response.text }
         return { 
             "StatusCode" : response.status_code,
             "Message" : message,
@@ -124,7 +131,7 @@ class API() :
         }
         
     @Common.LogFunction
-    def CallAPI(self, requestOperation : RequestOperation, url, json = None) :
+    def CallAPI(self, requestOperation : RequestOperation, url: str, json: dict[str, Any] = None) -> dict[str, Any]:
         """_summary_
 
         Args:
@@ -135,6 +142,7 @@ class API() :
         Returns:
             dictionary : modified response object based on call to CheckResponse().
         """
+        url = urljoin(self.ProfiseeUrl, url)
         match requestOperation :
             case RequestOperation.Get :
                 return self.CheckResponse(requests.get(url, json = json, headers = self.GetHeaders(), verify = self.VerifySSL))
@@ -155,39 +163,41 @@ class API() :
             self.UpdateAttribute(attribute)
 
 
+#############################################################################
 # AddressVerification
+#############################################################################    @Common.LogFunction
+    def GetAddressVerificationStrategies(self) -> list[dict[str, Any]]:
+        return self.CallAPI(RequestOperation.Get, "rest/v1/AddressVerificationStrategies")
     @Common.LogFunction
-    def GetAddressVerificationStrategies(self) :
-        return self.CallAPI(RequestOperation.Get, f"{self.ProfiseeUrl}/rest/v1/AddressVerificationStrategies")
-    @Common.LogFunction
-    def GetAddressVerificationStrategy(self, strategyName) :
-        return self.CallAPI(RequestOperation.Get, f"{self.ProfiseeUrl}/rest/v1/AddressVerificationStrategies/{strategyName}")
+    def GetAddressVerificationStrategy(self, strategyName) -> dict[str, Any]:
+        return self.CallAPI(RequestOperation.Get, f"rest/v1/AddressVerificationStrategies/{strategyName}")
     @Common.LogFunction
     def GetAddressVerificationStrategyAttributes(self, strategyName, recordCode) :
-        return self.CallAPI(RequestOperation.Get, f"{self.ProfiseeUrl}/rest/v1/AddressVerificationStrategies/{strategyName}/address?recordCode={recordCode}")
+        return self.CallAPI(RequestOperation.Get, f"rest/v1/AddressVerificationStrategies/{strategyName}/address?recordCode={recordCode}")
     @Common.LogFunction
     def StartAddressVerificationStrategy(self, strategyName, body) :
-        return self.CallAPI(RequestOperation.Post, f"{self.ProfiseeUrl}/rest/v1/AddressVerificationStrategies/{strategyName}/job", json = body)
+        return self.CallAPI(RequestOperation.Post, f"rest/v1/AddressVerificationStrategies/{strategyName}/job", json = body)
     @Common.LogFunction
     def StartAddressVerificationStrategy(self, strategyName, records) :
-        return self.CallAPI(RequestOperation.Post, f"{self.ProfiseeUrl}/rest/v1/AddressVerificationStrategies/{strategyName}/records", json = records)
+        return self.CallAPI(RequestOperation.Post, f"rest/v1/AddressVerificationStrategies/{strategyName}/records", json = records)
     @Common.LogFunction
     def StopAddressVerificationStrategy(self, strategyName) :
-        return self.CallAPI(RequestOperation.Put, f"{self.ProfiseeUrl}/rest/v1/AddressVerificationStrategies/{strategyName}/job/cancel")
-        
+        return self.CallAPI(RequestOperation.Put, f"rest/v1/AddressVerificationStrategies/{strategyName}/job/cancel")
+
+#############################################################################        
 # Attributes
+#############################################################################    @Common.LogFunction
     @Common.LogFunction
-    def GetAttributes(self) :
-        return self.CheckResponse(requests.get(f"{self.ProfiseeUrl}/rest/v1/Attributes", headers = self.GetHeaders()))
-    @Common.LogFunction
-    def GetAttributes(self, entityName) :
-        return self.CallAPI(RequestOperation.Get, f"{self.ProfiseeUrl}/rest/v1/Entities/{entityName}/attributes")
-        #return self.CheckResponse(requests.get(f"{self.ProfiseeUrl}/rest/v1/Entities/{entityName}/attributes", headers = self.GetHeaders()))
+    def GetAttributes(self, entity_name: str = None) -> Dict[str, Any]:
+        if entity_name is None :
+            return self.CallAPI(RequestOperation.Get, "rest/v1/Attributes")
+        else :
+            return self.CallAPI(RequestOperation.Get, f"rest/v1/Entities/{entity_name}/attributes")
     @Common.LogFunction       
-    def GetAttribute(self, entityName, attributeName) :
-        return self.CheckResponse(requests.get(f"{self.ProfiseeUrl}/rest/v1/Entities/{entityName}/attributes/" + attributeName, headers = self.GetHeaders()))
+    def GetAttribute(self, entity_name:str, attribute_name:str) -> Dict[str, Any]:
+        return self.CallAPI(RequestOperation.Get, f"rest/v1/Entities/{entity_name}/attributes/{attribute_name}")
     @Common.LogFunction
-    def CreateAttribute(self, attribute) :
+    def CreateAttribute(self, attribute: Dict[str, Any]) -> Dict[str, Any]:
         """_summary_
 
         Args:
@@ -199,7 +209,7 @@ class API() :
         return self.CreateAttributes([attribute])
 
     @Common.LogFunction
-    def CreateAttributes(self, attributes) :
+    def CreateAttributes(self, attributes: list[Dict[str, Any]]) -> Dict[str, Any]:
         """_summary_
 
         Args:
@@ -208,7 +218,7 @@ class API() :
         Returns:
             dictionary: Attribute creation information
         """
-        return self.CheckResponse(requests.post(f"{self.ProfiseeUrl}/rest/v1/Attributes", json = attributes, headers = self.GetHeaders(), verify = self.VerifySSL))
+        self.CallAPI(RequestOperation.Post, "rest/v1/Attributes", json = attributes)
 
     @Common.LogFunction
     def UpdateAttribute(self, attribute) :
@@ -216,11 +226,7 @@ class API() :
         
     @Common.LogFunction
     def UpdateAttributes(self, attributes) :
-        return self.CallAPI(RequestOperation.Put, f"{self.ProfiseeUrl}/rest/v1/Attributes", json = attributes)
-        #return self.CheckResponse(requests.put(f"{self.ProfiseeUrl}/rest/v1/Attributes", json = attributes, headers = self.GetHeaders(), verify = self.Verify))
-
-        # raise NotImplementedError("UpdateAttribute not implemented yet...")
-    # PUT     UpdateAttribute(attributeObject)
+        return self.CallAPI(RequestOperation.Put, "rest/v1/Attributes", json = attributes)
 
     @Common.LogFunction
     def DeleteAttributes(self, attributeNames) :
@@ -232,29 +238,52 @@ class API() :
         raise NotImplementedError("DeleteAttribute not implemented yet...")    
     # DELETE  DeleteAttribute(entityName, attributeName)      
 
+#############################################################################
 # Auth
+#############################################################################
     def GetAuthenticationURL(self) :
-        raise NotImplementedError("GetAuthenticationURL not implemented yet...")
-    # GET     GetAuthenticationURL()
+        return self.CallAPI(RequestOperation.Get, "rest/v1/Auth")
 
+#############################################################################
 ## Connect
+#############################################################################
     def RunConnectBatch(self, strategyName, filter = None, recordCodes = None) :
         body = {
             "FilterExpression" : filter if filter is not None else "",
             "Codes" : recordCodes if recordCodes is not None else [ ]
         }
-        return self.CallAPI(RequestOperation.Post, f"{self.ProfiseeUrl}/rest/v1/Connect/Strategies/{strategyName}/Batch", json = body)
+        return self.CallAPI(RequestOperation.Post, f"rest/v1/Connect/Strategies/{strategyName}/Batch", json = body)
 
     def RunConnectImmediate(self, strategyName, recordCodes) :
-        return self.CallAPI(RequestOperation.Post, f"{self.ProfiseeUrl}/rest/v1/Connect/Strategies/{strategyName}/Immediate", json = recordCodes)
+        return self.CallAPI(RequestOperation.Post, f"rest/v1/Connect/Strategies/{strategyName}/Immediate", json = recordCodes)
     
     # Come back to this one...
 
+#############################################################################
 ## DataQualityIssues
+#############################################################################
+    def GetDataQualityIssues(self, entityName:str, recordCodes: list[str], getOptions: GetOptions) -> dict[str, Any]:
+        pass
+        # return self.CallAPI(RequestOperation.Get, f"rest/v1/DataQualityIssues/{entityName}", params=getOptions)
 
+#############################################################################
 ## DataQualityRules
+#############################################################################
+    def GetDataQualityRules(self, entityName: str) -> dict[str, Any]:
+        pass
+        # return self.CallAPI(RequestOperation.Get, f"rest/v1/DataQualityRules/{entityName}")
 
+    def GetDataQualityRule(self, dataQualityRuleName: str) -> dict[str, Any]:
+        pass
+        # return self.CallAPI(RequestOperation.Get, f"rest/v1/DataQualityRules/{dataQualityRuleName}")
+
+    def GetDataQualityOperatorTypes(self) -> dict[str, Any]:
+        pass
+        # return self.CallAPI(RequestOperation.Get, "rest/v1/DataQualityRules/operatorTypes")
+
+#############################################################################
 ## Entities
+#############################################################################
     @Common.LogFunction
     def GetEntities(self) :
         """Returns all entities from Profisee instance.
@@ -262,15 +291,14 @@ class API() :
         Returns:
             dictionary: List of entities from Profisee instance.
         """
-        return self.CallAPI(RequestOperation.Get, f"{self.ProfiseeUrl}/rest/v1/Entities")
-        #return self.CheckResponse(requests.get(f"{self.ProfiseeUrl}/rest/v1/Entities", headers = self.GetHeaders()))
+        return self.CallAPI(RequestOperation.Get, "rest/v1/Entities")
 
     def GetEntity(self, entityName) :
         raise NotImplementedError("GetEntity not implemented yet...")
     # GET     GetEntity(entityName)
 
     def CreateEntity(self, entity) :
-        return self.CheckResponse(requests.post(f"{self.ProfiseeUrl}/rest/v1/Entities", json = [entity], headers = self.GetHeaders(), verify = self.VerifySSL))
+        self.CallAPI(RequestOperation.Post, "rest/v1/Entities", json = [entity])
     
     def UpdateEntity(self, entity) :
         raise NotImplementedError("UpdateEntity not implemented yet...")    
@@ -290,7 +318,7 @@ class API() :
         Returns:
             dictionary: deletion information.
         """
-        return self.CheckResponse(requests.delete(f"{self.ProfiseeUrl}/rest/v1/Entities/" + entityName, headers = self.GetHeaders()))
+        self.CallAPI(RequestOperation.Delete, f"rest/v1/Entities/{entityName}")
     
     @Common.LogFunction
     def DeleteEntities(self, entityNames) :
@@ -302,10 +330,12 @@ class API() :
         Returns:
             dictionary: deletion information.
         """
-        return self.CheckResponse(requests.delete(f"{self.ProfiseeUrl}/rest/v1/Entities?Entities=" + ",".join(entityNames), headers = self.GetHeaders()))
+        self.CallAPI(RequestOperation.Delete, "rest/v1/Entities?Entities=" + ",".join(entityNames))
 
 
+#############################################################################
 ## Events
+#############################################################################
     def CallExternalEventNotification(self, event) :
         raise NotImplementedError("CallExternalEventNotification not implemented yet...")    
     # GET     CallExternalEventNotification
@@ -319,23 +349,31 @@ class API() :
     #POST    TriggerInternalEvent(eventScenarioNames[], recordCodes[], entityName)
 
 
+#############################################################################
 ## FileAttachment
+#############################################################################
     def GetFileAttachment(self, entityName, recordCode, categoryName) :
         pass
 
     def PutFileAttachment(self, entityName, recordCode, categoryName) :
         pass
 
+#############################################################################
 ## Forms
+#############################################################################
     def GetForms(self, entityName = None) :
         pass
     
     def GetForm(self, formUid) :
         pass
 
+#############################################################################
 ## Governance
+#############################################################################
 
+#############################################################################
 # LogEvents
+#############################################################################
     @Common.LogFunction
     def GetLogEvents(self, pageNumber = 1, pageSize = 50) :
         """Get log events in reverse chronological order with optional pagination arguments.
@@ -347,10 +385,11 @@ class API() :
         Returns:
             dictionary: List of log events.
         """
-        # return self.CheckResponse(requests.get(self.ProfiseeUrl + f"/rest/v1/LogEvents?PageNumber={pageNumber}&PageSize={pageSize}", headers = self.GetHeaders()))
-        return self.CallAPI(RequestOperation.Get, self.ProfiseeUrl + f"/rest/v1/LogEvents?PageNumber={pageNumber}&PageSize={pageSize}")
+        return self.CallAPI(RequestOperation.Get, f"rest/v1/LogEvents?PageNumber={pageNumber}&PageSize={pageSize}")
 
-# Matching
+#############################################################################
+# # Matching
+#############################################################################
     @Common.LogFunction
     def GetMatchingStrategies(self) :
         """_summary_
@@ -358,8 +397,7 @@ class API() :
         Returns:
             dictionary: List of matching strategies.
         """
-        return self.CallAPI(RequestOperation.Get, f"{self.ProfiseeUrl}/rest/v1/Matching")
-        # return self.CheckResponse(requests.get(f"{self.ProfiseeUrl}/rest/v1/Matching", headers = self.GetHeaders()))
+        return self.CallAPI(RequestOperation.Get, "rest/v1/Matching")
 
     def GetMatches(self, strategyName, recordCodes) :
         pass
@@ -368,18 +406,18 @@ class API() :
         pass
 
     @Common.LogFunction
-    def ProcessMatchingActions(self, strategyName, processAction : ProcessActions) :
+    def ProcessMatchingActions(self, strategyName:str , processAction : ProcessActions) -> dict[str, Any]:
         actions = { "actions" : [] }
         match processAction :
             case ProcessActions.MatchingAndSurvivorship : actions = { "actions" : [ "IncludeSurvivorship" ] }
             case ProcessActions.SurvivorshipOnly : actions = { "actions" : [ "SurvivorshipOnly" ] }
             case ProcessActions.ClearPriorResults : actions = { "actions" : [ "ClearPriorResults", "ClearMatchingResults" ] }
             case ProcessActions.ClearAllPriorResults : actions = { "actions" : [ "ClearAllPriorResults", "ClearMatchingResults" ] }
-        return self.CheckResponse(requests.post(self.ProfiseeUrl + f"/rest/v1/Matching/{strategyName}/processActions", json = actions, headers = self.GetHeaders()))
+        return self.CallAPI(RequestOperation.Post, f"rest/v1/Matching/{strategyName}/processActions", json = actions)
     
     @Common.LogFunction
     def RestartMatchingSequence(self, strategyName, value) :
-        return self.CheckResponse(requests.post(self.ProfiseeUrl + f"/rest/v1/Matching/{strategyName}/restartSequence?Value={value}", headers = self.GetHeaders()))
+        return self.CallAPI(RequestOperation.Post, f"rest/v1/Matching/{strategyName}/restartSequence?Value={value}")
         
     def Survivorship(self) :
         pass
@@ -392,19 +430,20 @@ class API() :
         
     def UpdateMatchingStrategy(self, strategyName, matchingStatus : MatchingStatus) :
         status = { "continuousMatchingSetting" : matchingStatus.value }
-        return self.CallAPI(RequestOperation.Patch, self.ProfiseeUrl + f"/rest/v1/Matching/{strategyName}", json = status)
-        # return self.CheckResponse(requests.patch(self.ProfiseeUrl + f"/rest/v1/Matching/{strategyName}", json = status, headers = self.GetHeaders()))
+        return self.CallAPI(RequestOperation.Patch, f"rest/v1/Matching/{strategyName}", json = status)
     
     @Common.LogFunction        
     def UnmatchRecords(self, strategyName, recordCodes) :
-        return self.CheckResponse(requests.patch(self.ProfiseeUrl + f"/rest/v1/Matching/{strategyName}/unmatchRecords", json = { "recordCodes" : recordCodes }, headers = self.GetHeaders()))
-            
+        return self.CallAPI(RequestOperation.Patch, f"rest/v1/Matching/{strategyName}/unmatchRecords", json = { "recordCodes" : recordCodes })
+
+#############################################################################
 ## Monitor
+#############################################################################
     def GetMonitorActivities(self, getOptions : GetOptions = None) :
-        if (getOptions == None) : 
+        if (getOptions is None) : 
             getOptions = GetOptions()
             getOptions.OrderBy = "[StartedTime] desc"
-        return self.CheckResponse(requests.get(f"{self.ProfiseeUrl}/rest/v1/Monitor/activities?" + getOptions.QueryString(), headers = self.GetHeaders()))
+        return self.CallAPI(RequestOperation.Get, f"rest/v1/Monitor/activities?{getOptions.QueryString()}")
     
     def GetMonitorActivity(self, activityCode) :
         raise NotImplementedError("GetMonitorActivity not implemented yet...")        
@@ -414,24 +453,31 @@ class API() :
         raise NotImplementedError("GetMonitorActivityDetail not implemented yet...")            
     # GET     GetMonitorActivityDetail(activityCode, getOptions)
 
+#############################################################################
 ## Notifications
+#############################################################################
     def SendNotification(self, description, notificationType, userNames, notificationTiming) :
         raise NotImplementedError("SendNotification not implemented yet...")       
     # POST    SendNotification(description, notificationType, userNames[], notificationTiming)
 
+#############################################################################
 ## PortalConfiguration
+#############################################################################
     def UpdatePortalIcon(self, icon) :
         pass
     
+#############################################################################
 ## PresentationView
+#############################################################################
     def GetDefaultPresentationView(self, entityName) :
         pass
 
     def GetPresentationView(self, entityUid, presentationViewUid) :
         pass
 
+#############################################################################
 ## Records (Change Member to record for consistency)
-    
+#############################################################################    
     @Common.LogFunction
     # GET     GetMemberCloneAttributes(entityName, recordCode)
     def GetMemberCloneAttributes(self, entityName, recordCode) :
@@ -449,21 +495,14 @@ class API() :
             dictionary: record
         """
         data = self.GetRecords(entityName, GetOptions(f"[Code] eq '{recordCode}'"))
-        if len(data) > 0 : return data[0]
-        return None
+        return data[0] if len(data) > 0 else None
     
     @Common.LogFunction
     def GetRecords(self, entityName, getOptions : GetOptions = None) :
-        if (getOptions == None): getOptions = GetOptions()
+        if (getOptions is None): getOptions = GetOptions()
         
-        response = self.CallAPI(RequestOperation.Get, f"{self.ProfiseeUrl}/rest/v1/Records/" + entityName + "?" + getOptions.QueryString())
-        
-        if getOptions.CountsOnly :
-            # self.CheckResponse(requests.get(f"{self.ProfiseeUrl}/rest/v1/Records/" + entityName + "?" + getOptions.QueryString(), headers = self.GetHeaders()))
-            return self.LastResponse.json()
-        else :
-            return response
-        #self.CheckResponse(requests.get(f"{self.ProfiseeUrl}/rest/v1/Records/" + entityName + "?" + getOptions.QueryString(), headers = self.GetHeaders()))
+        response = self.CallAPI(RequestOperation.Get, f"rest/v1/Records/{entityName}?{getOptions.QueryString()}")                
+        return self.LastResponse.json() if getOptions.CountsOnly else response
     
     @Common.LogFunction
     def CreateRecord(self, entityName, record) :
@@ -476,7 +515,7 @@ class API() :
         Returns:
             dictionary: Creation information
         """
-        return self.CheckResponse(requests.post(f"{self.ProfiseeUrl}/rest/v1/Records/" + entityName, json = record, headers = self.GetHeaders()))
+        return self.CallAPI(RequestOperation.Post, f"rest/v1/Records/{entityName}", record)
     
     @Common.LogFunction
     def MergeRecord(self, entityName, record) :
@@ -493,11 +532,10 @@ class API() :
         Returns:
             dictionary: Merge records information
         """
-        return self.CallAPI(RequestOperation.Patch, f"{self.ProfiseeUrl}/rest/v1/Records/" + entityName, records)
-        # return self.CheckResponse(requests.patch(f"{self.ProfiseeUrl}/rest/v1/Records/" + entityName, json = records, headers = self.GetHeaders()))
-        
+        return self.CallAPI(RequestOperation.Patch, f"rest/v1/Records/{entityName}", json=records)
+
     @Common.LogFunction
-    def DeleteRecord(self, entityName, recordCode) :
+    def DeleteRecord(self, entityName: str, recordCode: str) :
         """Delete specified record from entity
 
         Args:
@@ -510,7 +548,7 @@ class API() :
         return self.DeleteRecords(entityName, [recordCode])
     
     @Common.LogFunction
-    def DeleteRecords(self, entityName, recordCodes) :
+    def DeleteRecords(self, entityName: str, recordCodes: list) :
         """Delete specified records
 
         Args:
@@ -521,8 +559,7 @@ class API() :
             dictionary: Delete records information
         """
         # ToDo : If > x RecordCodes sent in batch the operation since we are sending the record codes via the url and it is limited to about 2000 characters
-        return self.CallAPI(RequestOperation.Patch, f"{self.ProfiseeUrl}/rest/v1/Records/" + entityName + "?RecordCodes=" + ",".join(recordCodes))
-        # return self.CheckResponse(requests.delete(f"{self.ProfiseeUrl}/rest/v1/Records/" + entityName + "?RecordCodes=" + ",".join(recordCodes), headers = self.GetHeaders()))
+        return self.CallAPI(RequestOperation.Patch, f"rest/v1/Records/{entityName}?RecordCodes=" + ",".join(recordCodes))
     
     @Common.LogFunction
     def DeleteAllMembers(self, entityName) :
@@ -534,10 +571,11 @@ class API() :
         Returns:
             dictionary: Bulk member delete information
         """
-        return self.CallAPI(RequestOperation.Delete, f"{self.ProfiseeUrl}/rest/v1/Records/bulk/{entityName}")
-        # return self.CheckResponse(requests.delete(f"{self.ProfiseeUrl}/rest/v1/Records/bulk/" + entityName, headers = self.GetHeaders()))
+        return self.CallAPI(RequestOperation.Delete, f"rest/v1/Records/bulk/{entityName}")
 
+#############################################################################
 ## Themes
+#############################################################################
     def GetThemes(self) :
         raise NotImplementedError("GetThemes not implemented yet...")       
     # GET     GetThemes()
@@ -550,8 +588,9 @@ class API() :
         raise NotImplementedError("UpdateTheme not implemented yet...")       
     # PUT     UpdateTheme(name, themeObject)
 
-
+#############################################################################
 ## Transactions
+#############################################################################
     def GetTransactions(self, yName, getOptions) :
         raise NotImplementedError("GetTransactions not implemented yet...")   
     # GET     GetTransactions(entityName, getOptions)
@@ -560,7 +599,9 @@ class API() :
         raise NotImplementedError("ReverseTransaction not implemented yet...")   
     # PUT     ReverseTransaction(entityName, transactionId)
 
+#############################################################################
 # Workflows
+#############################################################################
     def DeleteWorkflowInstances(self, workflowName, instanceStatus) :
         raise NotImplementedError("DeleteWorkflowInstances not implemented yet...")
     # DELETE  DeleteWorkflowInstances(workflowName, instanceStatus)

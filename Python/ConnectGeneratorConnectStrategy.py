@@ -25,7 +25,7 @@ class ConnectGeneratorConnectStrategy():
     def generate(self) -> None:
         print(f"Connecting to '{self.profisee_settings["ProfiseeUrl"]}'")
         logger.info(f"Connecting to '{self.profisee_settings["ProfiseeUrl"]}'")
-        api = Restful.API(self.profisee_settings["ProfiseeUrl"], self.profisee_settings["ClientId"], verify = self.profisee_settings.get("VerifySSL", True))
+        api = Restful.API(self.profisee_settings["ProfiseeUrl"], self.profisee_settings["ClientId"], verify_ssl= self.profisee_settings.get("VerifySSL", True))
 
         entities = api.GetEntities()
 

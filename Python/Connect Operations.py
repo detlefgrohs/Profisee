@@ -14,9 +14,9 @@ profisee_settings = settings[instance_name]
 
 print(f"Connecting to '{profisee_settings["ProfiseeUrl"]}'")
 logger.info(f"Connecting to '{profisee_settings["ProfiseeUrl"]}'")
-api = Restful.API(profisee_settings["ProfiseeUrl"], profisee_settings["ClientId"], verify = False)
+api = Restful.API(profisee_settings["ProfiseeUrl"], profisee_settings["ClientId"], verify_ssl= False)
 
 # print(api.RunConnectImmediate("MelissaData Personator Name Strategy", [ "100000000" ]))
-# print(api.RunConnectImmediate("MelissaData Personator Name Strategy", [ "100000001" ]))
+print(api.RunConnectImmediate("MelissaData Personator Name Strategy", [ "100000001" ]))
 
-print(api.RunConnectBatch("MelissaData Personator Name Strategy"))
+# print(api.RunConnectBatch("MelissaData Personator Name Strategy"))

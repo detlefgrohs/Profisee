@@ -60,7 +60,7 @@ class EventLogViewer(App):
 
     def __init__(self, profisee_url:str = None, client_id:str = None, verify_ssl: bool = True) -> None:
         super().__init__()
-        self.api = Restful.API(profisee_url, client_id, verify=verify_ssl)
+        self.api = Restful.API(profisee_url, client_id, verify_ssl)
         
     def compose(self):
         yield Header(show_clock=True)
@@ -129,7 +129,7 @@ class EventLogViewer(App):
     def settings_updated(self, updated: bool) -> None:
         print(f"Settings updated: {updated}")
         if updated:
-            self.api = Restful.API(self.settings_dialog.ProfiseeUrl, self.settings_dialog.ClientId, verify=self.settings_dialog.VerifySSL)        
+            self.api = Restful.API(self.settings_dialog.ProfiseeUrl, self.settings_dialog.ClientId, self.settings_dialog.VerifySSL)        
             self.sub_title = f"API({self.api.ProfiseeUrl}, {self.api.ClientId}, {self.api.VerifySSL})"
 
 if __name__ == "__main__":
