@@ -271,6 +271,23 @@ class ProfiseeRestful {
     # ???
     #
 
+    [object] GetMonitorActivities([GetOptions]$GetOptions) {
+        $this.LogMessage("GetMonitorActivities(GetOptions = '$($GetOptions.GetQueryStrings())')", [LogType]::Info);
+    
+        return $this.WrapWithTryCatch({
+                $this.LastResponse = Invoke-RestMethod -Uri $this.GetProfiseeRESTfulUri("Monitor/activities?$($GetOptions.GetQueryStrings())") `
+                    -Method GET `
+                    -Headers $this.GetProfiseeRESTfulHeader()
+                $this.LogMessage("   Method = GET", [LogType]::Debug);
+                $this.LogMessage("   Response = '$($this.LastResponse)'", [LogType]::Debug);
+                $this.DumpProfiseeErrors();
+                $this.DumpProfiseeData();
+    
+                if ($GetOptions.CountsOnly -eq $true) { return $this.LastResponse; }
+                return (, $this.LastResponse.data);
+            });
+    }
+
     #########################################################################
     # Matching
     #########################################################################    

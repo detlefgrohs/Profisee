@@ -15,8 +15,6 @@ print(f"Using instance '{instance_name}' with ProfiseeUrl '{profisee_url}', Clie
 
 api = API(profisee_url, client_id, verify_ssl)
 
-
-
 def RunConnectBatch(activity_type: str, service_name: str, strategy_name: str, sleep_time:int = 15) -> dict:
     print(f"Running Connect Batch for strategy '{strategy_name}'")
     since_datetime = datetime.now(timezone.utc)
@@ -67,7 +65,6 @@ def RunConnectBatch(activity_type: str, service_name: str, strategy_name: str, s
         "WasSuccessful": was_successful,
         "Activities": monitor_activities
     }
-
 
 activity_type = "Database Export Activity"
 service = "Connect"
