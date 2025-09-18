@@ -261,8 +261,7 @@ class API() :
 #############################################################################
 ## DataQualityIssues
 #############################################################################
-    def GetDataQualityIssues(self, entityName:str, record_c
-    odes: list[str], getOptions: GetOptions) -> dict[str, Any]:
+    def GetDataQualityIssues(self, entityName:str, record_codes: list[str], getOptions: GetOptions) -> dict[str, Any]:
         pass
         # return self.CallAPI(RequestOperation.Get, f"rest/v1/DataQualityIssues/{entityName}", params=getOptions)
 
@@ -344,8 +343,7 @@ class API() :
         raise NotImplementedError("CancelUnprocessedEventMessages not implemented yet...")    
     # POST    CancelUnprocessedEventMessages(subscriberConfigurationName)
     
-    def TriggerInternalEvent(self, eventScenarioNames, record_c
-    odes, entityName) :
+    def TriggerInternalEvent(self, eventScenarioNames, record_codes, entityName) :
         raise NotImplementedError("TriggerInternalEvent not implemented yet...")        
     #POST    TriggerInternalEvent(eventScenarioNames[], record_c
     # odes[], entityName)
@@ -401,8 +399,7 @@ class API() :
         """
         return self.CallAPI(RequestOperation.Get, "rest/v1/Matching")
 
-    def GetMatches(self, strategyName, record_c
-    odes) :
+    def GetMatches(self, strategyName, record_codes) :
         pass
 
     def Lookup(self) :
@@ -428,8 +425,7 @@ class API() :
     def Housekeeping(self) :
         pass
         
-    def Match(self, strategyName, record_c
-    odes) :
+    def Match(self, strategyName, record_codes) :
         pass
         
     def UpdateMatchingStrategy(self, strategyName, matchingStatus : MatchingStatus) :
@@ -437,11 +433,8 @@ class API() :
         return self.CallAPI(RequestOperation.Patch, f"rest/v1/Matching/{strategyName}", json = status)
     
     @Common.LogFunction        
-    def UnmatchRecords(self, strategyName, record_c
-    odes) :
-        return self.CallAPI(RequestOperation.Patch, f"rest/v1/Matching/{strategyName}/unmatchRecords", json = { "record_c
-        odes" : record_c
-        odes })
+    def UnmatchRecords(self, strategyName, record_codes) :
+        return self.CallAPI(RequestOperation.Patch, f"rest/v1/Matching/{strategyName}/unmatchRecords", json = { "record_codes" : record_codes })
 
 #############################################################################
 ## Monitor
@@ -560,8 +553,7 @@ class API() :
 
         Args:
             entityName (string): Entity name
-            record_c
-            odes (list): List of record codes to remove from entity
+            record_codes (list): List of record codes to remove from entity
 
         Returns:
             dictionary: Delete records information
