@@ -83,5 +83,13 @@ $response
 
 $strategy_name = "SQL Server [DQChild] Export [dbo].[tbl_DQChild]"
 
-$response = RunConnectBatch $activity_type $service $strategy_name
+# $response = RunConnectBatch $activity_type $service $strategy_name
 $response
+
+/*
+
+{ "Name" : "SQL Server [DQParent] Export [dbo].[tbl_DQParent]", "ActivityType" : "Database Export Activity" }
+
+{ "Name" : "SQL Server [DQChild] Export [dbo].[tbl_DQChild]", "ActivityType" : "Database Export Activity" }
+
+*/

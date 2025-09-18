@@ -9,12 +9,22 @@ $Global:Settings = ((Get-Content "$executionDirectory\settings.json") | ConvertF
 
 $restfulAPI = [ProfiseeRestful]::new($Environment);
 
-$options = [GetOptions]::new();
-$records = $restfulAPI.GetRecords("Test", $options)
+# $options = [GetOptions]::new();
+# $records = $restfulAPI.GetRecords("Test", $options)
 
-$records | ForEach-Object {
-    Write-Host "Found $($_.Code) [$($_.Name)]"
+# $records | ForEach-Object {
+#     Write-Host "Found $($_.Code) [$($_.Name)]"
 
 
     
-}
+# }
+
+
+$json = '{ "Name" : "SQL Server [DQParent] Export [dbo].[tbl_DQParent]", "ActivityType" : "Database Export Activity" }'
+$json
+
+$object = $json | ConvertFrom-Json
+$object
+
+
+ConvertTo-Json -InputObject $object

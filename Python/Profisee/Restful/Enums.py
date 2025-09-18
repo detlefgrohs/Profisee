@@ -40,3 +40,10 @@ class RequestOperation(Enum) :
     Post = 2
     Patch = 3
     Delete = 4
+    
+class WorkflowInstanceStatus(Enum) :
+    All = -1
+    Undefined = 0
+    Completed = 1
+    Suspended = 2
+    Running = 3

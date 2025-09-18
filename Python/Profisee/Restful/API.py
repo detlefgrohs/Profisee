@@ -5,7 +5,7 @@ from typing import Any, Dict
 
 from Profisee.Restful.GetOptions import GetOptions
 from Profisee.Common import Common
-from Profisee.Restful.Enums import ProcessActions, MatchingStatus, RequestOperation
+from Profisee.Restful.Enums import ProcessActions, MatchingStatus, RequestOperation, WorkflowInstanceStatus
 
 class API() :
     """Class to handle requests and responses from the Profisee Restful API.
@@ -73,13 +73,12 @@ class API() :
         
         if (caller_name, response.status_code) in self.ResponseHandlers :
             returnValue = self.ResponseHandlers[(caller_name, response.status_code)](response)
+        elif (None, response.status_code) in self.ResponseHandlers :
+            returnValue = self.ResponseHandlers[(None, response.status_code)](response)
         else :
-            if (None, response.status_code) in self.ResponseHandlers :
-                returnValue = self.ResponseHandlers[(None, response.status_code)](response)
-            else :
-                returnValue = {
-                    "Error" : f"Unknown statusCode '{response.status_code}'"
-                }                
+            returnValue = {
+                "Error" : f"Unknown statusCode '{response.status_code}'"
+            }
         logging.getLogger().debug(f"returnValue = '{returnValue}'")
         return returnValue
 
@@ -247,22 +246,23 @@ class API() :
 #############################################################################
 ## Connect
 #############################################################################
-    def RunConnectBatch(self, strategyName, filter = None, recordCodes = None) :
+    def RunConnectBatch(self, strategy_name, filter = None, record_codes = None) :
         body = {
             "FilterExpression" : filter if filter is not None else "",
-            "Codes" : recordCodes if recordCodes is not None else [ ]
+            "Codes" : record_codes if record_codes is not None else [ ]
         }
-        return self.CallAPI(RequestOperation.Post, f"rest/v1/Connect/Strategies/{strategyName}/Batch", json = body)
+        return self.CallAPI(RequestOperation.Post, f"rest/v1/Connect/Strategies/{strategy_name}/Batch", json = body)
 
-    def RunConnectImmediate(self, strategyName, recordCodes) :
-        return self.CallAPI(RequestOperation.Post, f"rest/v1/Connect/Strategies/{strategyName}/Immediate", json = recordCodes)
-    
+    def RunConnectImmediate(self, strategy_name:str, record_codes: list[str]) -> dict[str, Any]:
+        return self.CallAPI(RequestOperation.Post, f"rest/v1/Connect/Strategies/{strategy_name}/Immediate", json = record_codes)
+
     # Come back to this one...
 
 #############################################################################
 ## DataQualityIssues
 #############################################################################
-    def GetDataQualityIssues(self, entityName:str, recordCodes: list[str], getOptions: GetOptions) -> dict[str, Any]:
+    def GetDataQualityIssues(self, entityName:str, record_c
+    odes: list[str], getOptions: GetOptions) -> dict[str, Any]:
         pass
         # return self.CallAPI(RequestOperation.Get, f"rest/v1/DataQualityIssues/{entityName}", params=getOptions)
 
@@ -285,7 +285,7 @@ class API() :
 ## Entities
 #############################################################################
     @Common.LogFunction
-    def GetEntities(self) :
+    def GetEntities(self) -> dict[str, Any]:
         """Returns all entities from Profisee instance.
 
         Returns:
@@ -309,7 +309,7 @@ class API() :
     # DELETE  DeleteEntities(entityNames[])
     
     @Common.LogFunction
-    def DeleteEntity(self, entityName) :
+    def DeleteEntity(self, entityName:str) -> dict[str, Any]:
         """_summary_
 
         Args:
@@ -318,10 +318,10 @@ class API() :
         Returns:
             dictionary: deletion information.
         """
-        self.CallAPI(RequestOperation.Delete, f"rest/v1/Entities/{entityName}")
+        return self.CallAPI(RequestOperation.Delete, f"rest/v1/Entities/{entityName}")
     
     @Common.LogFunction
-    def DeleteEntities(self, entityNames) :
+    def DeleteEntities(self, entityNames:list[str]) -> dict[str, Any]:
         """_summary_
 
         Args:
@@ -330,7 +330,7 @@ class API() :
         Returns:
             dictionary: deletion information.
         """
-        self.CallAPI(RequestOperation.Delete, "rest/v1/Entities?Entities=" + ",".join(entityNames))
+        return self.CallAPI(RequestOperation.Delete, "rest/v1/Entities?Entities=" + ",".join(entityNames))
 
 
 #############################################################################
@@ -344,9 +344,11 @@ class API() :
         raise NotImplementedError("CancelUnprocessedEventMessages not implemented yet...")    
     # POST    CancelUnprocessedEventMessages(subscriberConfigurationName)
     
-    def TriggerInternalEvent(self, eventScenarioNames, recordCodes, entityName) :
+    def TriggerInternalEvent(self, eventScenarioNames, record_c
+    odes, entityName) :
         raise NotImplementedError("TriggerInternalEvent not implemented yet...")        
-    #POST    TriggerInternalEvent(eventScenarioNames[], recordCodes[], entityName)
+    #POST    TriggerInternalEvent(eventScenarioNames[], record_c
+    # odes[], entityName)
 
 
 #############################################################################
@@ -399,7 +401,8 @@ class API() :
         """
         return self.CallAPI(RequestOperation.Get, "rest/v1/Matching")
 
-    def GetMatches(self, strategyName, recordCodes) :
+    def GetMatches(self, strategyName, record_c
+    odes) :
         pass
 
     def Lookup(self) :
@@ -425,7 +428,8 @@ class API() :
     def Housekeeping(self) :
         pass
         
-    def Match(self, strategyName, recordCodes) :
+    def Match(self, strategyName, record_c
+    odes) :
         pass
         
     def UpdateMatchingStrategy(self, strategyName, matchingStatus : MatchingStatus) :
@@ -433,8 +437,11 @@ class API() :
         return self.CallAPI(RequestOperation.Patch, f"rest/v1/Matching/{strategyName}", json = status)
     
     @Common.LogFunction        
-    def UnmatchRecords(self, strategyName, recordCodes) :
-        return self.CallAPI(RequestOperation.Patch, f"rest/v1/Matching/{strategyName}/unmatchRecords", json = { "recordCodes" : recordCodes })
+    def UnmatchRecords(self, strategyName, record_c
+    odes) :
+        return self.CallAPI(RequestOperation.Patch, f"rest/v1/Matching/{strategyName}/unmatchRecords", json = { "record_c
+        odes" : record_c
+        odes })
 
 #############################################################################
 ## Monitor
@@ -548,61 +555,107 @@ class API() :
         return self.DeleteRecords(entityName, [recordCode])
     
     @Common.LogFunction
-    def DeleteRecords(self, entityName: str, recordCodes: list) :
+    def DeleteRecords(self, entity_name: str, record_codes: list) :
         """Delete specified records
 
         Args:
             entityName (string): Entity name
-            recordCodes (list): List of record codes to remove from entity
+            record_c
+            odes (list): List of record codes to remove from entity
 
         Returns:
             dictionary: Delete records information
         """
         # ToDo : If > x RecordCodes sent in batch the operation since we are sending the record codes via the url and it is limited to about 2000 characters
-        return self.CallAPI(RequestOperation.Patch, f"rest/v1/Records/{entityName}?RecordCodes=" + ",".join(recordCodes))
+        return self.CallAPI(RequestOperation.Patch, f"rest/v1/Records/{entity_name}?Record_codes=" + ",".join(record_codes))
     
     @Common.LogFunction
-    def DeleteAllMembers(self, entityName) :
-        """Deletes all records, History, DQ Issue and DQ Issue History by entity name.
+    def DeleteAllMembers(self, entity_name:str) -> dict[str, Any]:
+        """Deletes all members of a specific entity.
 
         Args:
-            entityName (string): Entity name
+            entity_name (str): The name of the entity to delete members from.
 
         Returns:
-            dictionary: Bulk member delete information
+            dict[str, Any]: The response from the API call.
         """
-        return self.CallAPI(RequestOperation.Delete, f"rest/v1/Records/bulk/{entityName}")
+        return self.CallAPI(RequestOperation.Delete, f"rest/v1/Records/bulk/{entity_name}")
 
 #############################################################################
 ## Themes
 #############################################################################
-    def GetThemes(self) :
-        raise NotImplementedError("GetThemes not implemented yet...")       
-    # GET     GetThemes()
-    
-    def GetTheme(self, themeId) :
-        raise NotImplementedError("GetTheme not implemented yet...")       
-    # GET     GetTheme()
+    def GetThemes(self) -> dict[str, Any]:
+        """Retrieves all themes.
 
-    def UpdateTheme(self, themeObject) :
-        raise NotImplementedError("UpdateTheme not implemented yet...")       
-    # PUT     UpdateTheme(name, themeObject)
+        Returns:
+            dict[str, Any]: The response from the API call.
+        """
+        return self.CallAPI(RequestOperation.Get, "rest/v1/Themes")
+
+    def GetTheme(self, theme_name:str) -> dict[str, Any]:
+        """Retrieves a specific theme.
+
+        Args:
+            theme_name (str): The name of the theme to retrieve.
+
+        Returns:
+            dict[str, Any]: The response from the API call.
+        """
+        return self.CallAPI(RequestOperation.Get, f"rest/v1/Themes/{theme_name}")
+
+    def UpdateTheme(self, theme_name:str, theme_object:dict[str, Any]) -> dict[str, Any]:
+        """Updates a specific theme.
+
+        Args:
+            theme_name (str): The name of the theme to update.
+            theme_object (dict[str, Any]): The updated theme object.
+
+        Returns:
+            dict[str, Any]: The response from the API call.
+        """
+        return self.CallAPI(RequestOperation.Put, f"rest/v1/Themes/{theme_name}", json=theme_object)
 
 #############################################################################
 ## Transactions
 #############################################################################
-    def GetTransactions(self, yName, getOptions) :
-        raise NotImplementedError("GetTransactions not implemented yet...")   
-    # GET     GetTransactions(entityName, getOptions)
+    def GetTransactions(self, entity_name:str, record_code:str, get_options:GetOptions) -> dict[str, Any]:
+        """Retrieves transactions for a specific record.
 
-    def ReverseTransaction(self, entityName, transactionId) :
-        raise NotImplementedError("ReverseTransaction not implemented yet...")   
-    # PUT     ReverseTransaction(entityName, transactionId)
+        Args:
+            entity_name (str): The name of the entity.
+            record_code (str): The code of the record.
+            get_options (GetOptions): Options for the GET request.
+
+        Returns:
+            dict[str, Any]: The response from the API call.
+        """
+        return self.CallAPI(RequestOperation.Get, f"rest/v1/Transactions/{entity_name}?recordCode={record_code}&{get_options.QueryString()}")
+
+    def ReverseTransaction(self, entity_name:str, transaction_id:int, record_code:str) -> dict[str, Any]:
+        """Reverses a specific transaction.
+
+        Args:
+            entity_name (str): The name of the entity.
+            transaction_id (int): The ID of the transaction to reverse.
+            record_code (str): The code of the record associated with the transaction.
+
+        Returns:
+            dict[str, Any]: The response from the API call.
+        """
+        return self.CallAPI(RequestOperation.Put, f"rest/v1/Transactions/{entity_name}/{transaction_id}/reverse", json = { "recordCode": record_code })
 
 #############################################################################
 # Workflows
 #############################################################################
-    def DeleteWorkflowInstances(self, workflowName, instanceStatus) :
-        raise NotImplementedError("DeleteWorkflowInstances not implemented yet...")
-    # DELETE  DeleteWorkflowInstances(workflowName, instanceStatus)
+    def DeleteWorkflowInstances(self, workflow_name:str, instance_status:WorkflowInstanceStatus) -> dict[str, Any]:
+        """Deletes specified instances of a workflow.
 
+        Args:
+            workflow_name (str): The name of the workflow.
+            instance_status (WorkflowInstanceStatus): The status of the instances to delete.
+
+        Returns:
+            dict[str, Any]: The response from the API call.
+        """
+        instance_status_query_part = f"&InstanceStatus={instance_status.value}" if instance_status != WorkflowInstanceStatus.All else ""
+        return self.CallAPI(RequestOperation.Delete, f"rest/v1/Workflows?WorkflowName={workflow_name}{instance_status_query_part}")
