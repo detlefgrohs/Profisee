@@ -1,0 +1,1 @@
+pyinstaller .\Orchestration.spec --noconfirm --clean

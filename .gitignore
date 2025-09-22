@@ -12,3 +12,6 @@ PowerShell/ProfiseeRESTful.log
 Python/Connect Generator Connect Strategy.log
 
 *.log
+
+Python/build
+Python/dist

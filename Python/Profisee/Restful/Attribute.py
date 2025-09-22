@@ -2,13 +2,13 @@ from Profisee.Restful.Enums import AttributeType, AttributeDataType
 from Profisee.Common import null_guid
 
 class Attribute :
-    def __init__(self, entityName, name, attributeType : AttributeType = AttributeType.FreeForm, dataType : AttributeDataType = AttributeDataType.Text, length = 200) :
-        self.EntityName = entityName
-        self.Name = name
+    def __init__(self, entity_name:str, attribute_name:str, attributeType : AttributeType = AttributeType.FreeForm, dataType : AttributeDataType = AttributeDataType.Text, length: int = 200, domain: str = None) -> None:
+        self.EntityName = entity_name
+        self.Name = attribute_name
         self.AttributeType = attributeType
         self.DataType = dataType
         self.Length = length
-        self.Domain = None
+        self.Domain = domain
 
     @classmethod
     def from_Attribute(cls, attribute) :

@@ -205,7 +205,7 @@ class API() :
         Returns:
             dictionary: Attribute creation information
         """
-        return self.CreateAttributes([attribute])
+        return self.CallAPI(RequestOperation.Post, "rest/v1/Attributes", json = [attribute])
 
     @Common.LogFunction
     def CreateAttributes(self, attributes: list[Dict[str, Any]]) -> Dict[str, Any]:
@@ -217,7 +217,9 @@ class API() :
         Returns:
             dictionary: Attribute creation information
         """
-        self.CallAPI(RequestOperation.Post, "rest/v1/Attributes", json = attributes)
+        # self.CallAPI(RequestOperation.Post, "rest/v1/Attributes", json = attributes)
+        for attribute in attributes:
+            self.CreateAttribute(attribute)
 
     @Common.LogFunction
     def UpdateAttribute(self, attribute) :
@@ -293,8 +295,7 @@ class API() :
         return self.CallAPI(RequestOperation.Get, "rest/v1/Entities")
 
     def GetEntity(self, entityName) :
-        raise NotImplementedError("GetEntity not implemented yet...")
-    # GET     GetEntity(entityName)
+        return self.CallAPI(RequestOperation.Get, f"rest/v1/Entities/{entityName}")
 
     def CreateEntity(self, entity) :
         self.CallAPI(RequestOperation.Post, "rest/v1/Entities", json = [entity])
