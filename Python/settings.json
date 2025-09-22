@@ -7,7 +7,7 @@
     "CommentB": "This is the default entity name, you can change and run the bootstrap again to create new entities.",
     "OrchestrationEntityName" : "Orchestration",
 
-    "CommandC": "These are the api settings for multiple environments, you can add more as needed.",
+    "CommentC": "These are the api settings for multiple environments, you can add more as needed.",
     "Local" : {
         "ProfiseeUrl" : "https://corpltr16.corp.profisee.com/profisee25r2",
         "ClientId" : "0741a8cbebe54c2eae3d3b5cc4f49600",

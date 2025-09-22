@@ -18,6 +18,7 @@ class Orchestration:
         self.orchestration_entity_name = orchestration_entity_name
         self.orchestration_step_entity_name = f"{orchestration_entity_name}Step"
         self.orchestration_log_entity_name = f"{orchestration_entity_name}Log"
+        self.what_if = False
 
         self.get_orchestration_settings()
 
@@ -27,7 +28,7 @@ class Orchestration:
 
         if (settings_record := self.API.GetRecord(self.orchestration_entity_name, "z_Settings")):
             settings = self.parse_json(Common.Get(settings_record, "Parameters", "{}"))
-            if settings is None:
+            if settings is not None:
                 self.min_log_level = Common.Get(settings, "MinLogLevel", "INFO").lower()
                 self.activity_polling_interval = Common.Get(settings, "ActivityPollingInterval", 15) # seconds
                         
@@ -67,7 +68,7 @@ class Orchestration:
             return None
 
     @LogFunction
-    def orchestrate(self, name: str):
+    def orchestrate(self, name: str) -> dict[str, Any]:
 
         orchestration_code = name        
         orchestration = self.API.GetRecord(self.orchestration_entity_name, orchestration_code)
@@ -170,6 +171,13 @@ class Orchestration:
 
     @LogFunction
     def start_process_connect(self, orchestration_code:str, orchestration_step_code: str, strategy_name: str, parameters: dict[str, Any]) -> dict[str, Any]:
+        if self.what_if:
+            self.LogToProfisee(orchestration_code, orchestration_step_code, "INFO", f"WHATIF: Would run Connect Batch for strategy '{strategy_name}'")
+            return {
+                "Error": False,
+                "response": None
+            }
+        
         response = self.API.RunConnectBatch(strategy_name)                
         return {
             "Error": False,
@@ -185,6 +193,15 @@ class Orchestration:
             
     @LogFunction
     def wait_for_completion(self, orchestration_code:str, orchestration_step_code: str, name: str, process_type: str, parameters: dict[str, Any], since_datetime: datetime) -> dict[str, Any]:
+        if self.what_if:
+            self.LogToProfisee(orchestration_code, orchestration_step_code, "INFO", f"WHATIF: Would wait for completion of process type '{process_type}' for orchestration step '{name}'")
+            return {
+                "FirstActivityDateTime": datetime.now(),
+                "ElapsedTime": (datetime.now() - datetime.now()),
+                "Error": False,
+                "Activities": []
+            }
+        
         first_activity_datetime = None
         was_successful = False
         
@@ -328,7 +345,8 @@ if __name__ == "__main__":
     parser.add_argument("--name", type=str, help=f"Name of Orchestration to run from {orchestration_entity_name} entity.")
     parser.add_argument("--bootstrap", action='store_true', help="If set, will create all of the necessary entities to run the orchestration.")
     parser.add_argument("--test", action='store_true', help="Test the connection to the Profisee API.")
-    
+    parser.add_argument("--whatif", action='store_true', help="If set, will not make any changes, but will show what would be done.")
+
     if len(sys.argv) == 1:
         parser.print_help()
         sys.exit(1)
@@ -363,6 +381,7 @@ if __name__ == "__main__":
         sys.exit(1)
 
     orchestration = Orchestration(api, orchestration_entity_name)
+    orchestration.what_if = args.whatif
     result = orchestration.orchestrate(args.name)
     print(result)
     
