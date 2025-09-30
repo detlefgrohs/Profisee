@@ -1,10 +1,20 @@
 ﻿{
-  "CLULocation": "C:\\Program Files\\Profisee\\Master Data Maestro Utilities\\25.2.0",
+  "CommentA": "These settings are used to connect to the Profisee API. You can create multiple sections for different environments below.",
+  "ProfiseeUrl" : "https://corpltr16.corp.profisee.com/profisee25r2",
+  "ClientId" : "0741a8cbebe54c2eae3d3b5cc4f49600",
+  "VerifySSL": false,
 
+  "CommentB": "This is the default entity name, you can change and run the bootstrap again to create new entities.",
+  "OrchestrationEntityName" : "Orchestration",
+
+  "CommentC": "These are the api settings for multiple environments, you can add more as needed.",
   "Environments": {
     "Local" : {
       "ProfiseeURI": "https://corpltr16.corp.profisee.com/profisee25r2",
       "ClientID": "0741a8cbebe54c2eae3d3b5cc4f49600"    
     }
-  }
+  },
+
+  "CommentD": "These are needed for the Profisee Artifact Management functionality.",
+  "CLULocation": "C:\\Program Files\\Profisee\\Master Data Maestro Utilities\\25.2.0",
 }

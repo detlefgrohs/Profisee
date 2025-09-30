@@ -21,7 +21,7 @@ verify_ssl = Common.Get(settings, "VerifySSL", True)
 
 api = API(profisee_url, client_id, verify_ssl)
 
-orchestration_entity_name = Common.Get(settings, "OrchestrationEntityName", "OrchestrationA")
+orchestration_entity_name = Common.Get(settings, "OrchestrationEntityName", "Orchestration")
 orchestration_step_entity_name = f"{orchestration_entity_name}Step"
 orchestration_log_entity_name = f"{orchestration_entity_name}Log"
 

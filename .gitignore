@@ -15,3 +15,10 @@ Python/Connect Generator Connect Strategy.log
 
 Python/build
 Python/dist
+
+Python/settings_private.json
+
+
+workarea_freeman_canonical_model.dbml
+
+workarea_generate_diagram.dbml

@@ -1,4 +1,5 @@
 from Profisee.Restful.Enums import DbaFormatEnum
+import urllib.parse
 
 class GetOptions :
     def __init__(self, filter="") :
@@ -18,7 +19,7 @@ class GetOptions :
         
     def QueryString(self):
         queryStringList = []
-        if (self.Filter != ""): queryStringList.append(f"Filter={self.Filter}")        
+        if (self.Filter != ""): queryStringList.append(f"Filter={urllib.parse.quote(self.Filter)}")        
         if (self.PageNumber != 1): queryStringList.append(f"PageNumber={str(self.PageNumber)}")
         if (self.PageSize != 50): queryStringList.append(f"PageSize={str(self.PageSize)}")
         if (self.OrderBy != ""): queryStringList.append(f"OrderBy={self.OrderBy}")

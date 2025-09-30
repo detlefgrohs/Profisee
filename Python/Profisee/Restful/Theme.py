@@ -6,8 +6,8 @@ class Theme :
         pass
         
     @classmethod
-    def from_Entity(cls, theme_object:dict[str, Any]) -> Any:
-        return cls("").Load(theme_object)
+    def from_Theme(cls, theme_object: dict[str, Any]) -> Any:
+        return cls().Load(theme_object)
 
     def to_Theme(self) -> dict[str, Any] :
         return {
@@ -69,4 +69,21 @@ class Theme :
   "selectedBg": "211, 237, 249",
   "hyperlink": "19, 98, 134"
 }
+
+
+      "bannerPrimary": "255,255,255",
+      "bannerFi": "62, 19, 17",
+      "bannerSecondary": "251, 201, 196",
+      "contentPrimaryBg": "255, 255, 255",
+      "contentPrimaryFi": "107, 114, 128",
+      "contentSecondaryBg": "242, 244, 245",
+      "contentSecondaryFi": "254, 233, 227",
+      "accentBg": "144, 24, 35",
+      "accentFi": "255, 255, 255",
+      "selectedBg": "251, 201, 196",
+      "hyperlink": "114, 14, 47",
+      "navStart": "144, 24, 35",
+      "navEnd": "144, 24, 35",
+
+
 """

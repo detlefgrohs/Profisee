@@ -5,11 +5,12 @@ from typing import Any
 import json, time, random
 import argparse
 from functools import wraps
+import urllib.parse
 
 from Profisee.Restful import API, Entity, Attribute
 from Profisee.Restful import GetOptions
 from Profisee.Common import Common
-from Profisee.Restful.Enums import AttributeType, AttributeDataType
+from Profisee.Restful.Enums import AttributeType, AttributeDataType, ProcessActions, get_enum_from_string
 
 class Orchestration:
     def __init__(self, api: API, orchestration_entity_name: str = "Orchestration") -> None:
@@ -67,83 +68,87 @@ class Orchestration:
             self.LogToProfisee(None, None, "ERROR", f"Error parsing JSON: {e}")
             return None
 
-    @LogFunction
-    def orchestrate(self, name: str) -> dict[str, Any]:
-
-        orchestration_code = name        
-        orchestration = self.API.GetRecord(self.orchestration_entity_name, orchestration_code)
-        if not orchestration:
-            print(f"Orchestration '{orchestration_code}' not found.")
-            return {
-                "Error": True,
-                "Message": f"Orchestration '{orchestration_code}' not found."
-            }
-        
-        orchestration_parameters_json = Common.Get(orchestration, "Parameters", "{}")
-        orchestration_parameters = self.parse_json(orchestration_parameters_json)
-        if orchestration_parameters is None:
-            return {
-                "Error": True,
-                "Message": f"Orchestration '{orchestration_code}' has invalid JSON parameters: {orchestration_parameters_json}"
-            }
-        
-        threaded = Common.Get(orchestration_parameters, "Mode", "Sequential") == "Concurrent"
-        abort_on_error = Common.Get(orchestration_parameters, "ErrorHandling", "Abort") == "Abort"
-
-        self.LogToProfisee(orchestration_code, None, "INFO", f"Starting orchestration '{orchestration_code}' with parameters {orchestration_parameters}...")
-        self.LogToProfisee(orchestration_code, None, "INFO", f"Orchestration '{orchestration_code}' running in {'threaded' if threaded else 'sequential'} mode.")
-
+    def get_orchestration_steps(self, orchestration_code: str) -> list[dict[str, Any]]:
         options = GetOptions()
         options.Filter = f"[{self.orchestration_entity_name}] eq '{orchestration_code}'"
         options.OrderBy = "[StepNumber]"
-        orchestration_steps = self.API.GetRecords(self.orchestration_step_entity_name, options)
+        return self.API.GetRecords(self.orchestration_step_entity_name, options)
+
+    def get_orchestration(self, orchestration_code: str) -> dict[str, Any]:
+        orchestration = self.API.GetRecord(self.orchestration_entity_name, orchestration_code)
+
+        return (orchestration, self.parse_json(Common.Get(orchestration, "Parameters", "{}")) if orchestration else None)
+
+    @LogFunction
+    def orchestrate(self, orchestration_code: str) -> dict[str, Any]:
         
+        (orchestration, orchestration_parameters) = self.get_orchestration(orchestration_code)        
+        if orchestration is None or orchestration_parameters is None:
+            return {
+                "Error": True,
+                "Message": f"Orchestration '{orchestration_code}' not found or has invalid parameters."
+            }        
+        threaded = Common.Get(orchestration_parameters, "Mode", "Sequential") == "Concurrent"
+        abort_on_error = Common.Get(orchestration_parameters, "ErrorHandling", "Abort") == "Abort"
+
+        self.LogToProfisee(orchestration_code, None, "INFO", f"Starting orchestration '{orchestration_code}' with parameters {orchestration_parameters}; running in {'threaded' if threaded else 'sequential'} mode.")
+
         threads = []
         self.results = []
         
-        for step in orchestration_steps:
+        for step in self.get_orchestration_steps(orchestration_code):
+            strategy_name = Common.Get(step, "Name", "")
             orchestration_step_code = Common.Get(step, "Code", "")
-            name = Common.Get(step, "Name", "")
             process_type = Common.Get(step, "ProcessType", "")
             parameters_json = Common.Get(step, "Parameters", {})
             parameters = self.parse_json(parameters_json)
+            
             if parameters is None:
                 return {
                     "Error": True,
                     "Message": f"Orchestration '{orchestration_code}' step '{orchestration_step_code}' has invalid JSON parameters: {parameters_json}"
                 }
             
-            if enabled := Common.Get(parameters, "Enabled", True):
+            if Common.Get(parameters, "Enabled", True):
                 if threaded:
-                    thread = threading.Thread(target=self.run, args=(orchestration_code, orchestration_step_code, name, process_type, parameters))
+                    thread = threading.Thread(target=self.run, args=(orchestration_code, orchestration_step_code, strategy_name, process_type, parameters))
                     threads.append(thread)
                     thread.start()
                 else:
-                    result = self.run(orchestration_code, orchestration_step_code, name, process_type, parameters)
-                    self.results.append(result)
+                    result = self.run(orchestration_code, orchestration_step_code, strategy_name, process_type, parameters)
                     if Common.Get(result, "Error", False) and abort_on_error:
-                        self.LogToProfisee(orchestration_code, None, "ERROR", f"Orchestration '{orchestration_code}' failed on step '{orchestration_step_code}' '{name}' with process type '{process_type}' and parameters {parameters}.")
+                        self.LogToProfisee(orchestration_code, None, "ERROR", f"Orchestration '{orchestration_code}' failed on step '{orchestration_step_code}' '{strategy_name}' with process type '{process_type}' and parameters {parameters}.")
                         break
             else:
-                self.LogToProfisee(orchestration_code, orchestration_step_code, "INFO", f"Skipping disabled orchestration step '{orchestration_step_code}' '{name}'.")
+                self.LogToProfisee(orchestration_code, orchestration_step_code, "INFO", f"Skipping disabled orchestration step '{orchestration_step_code}' '{strategy_name}'.")
 
-        if threaded:
-            for thread in threads: # Wait for all threads to complete
-                thread.join()
-                
-            for result in self.results:
-                print(result)
+        if threaded: map(lambda thread: thread.join(), threads) # Wait for all threads to complete
 
-        self.LogToProfisee(orchestration_code, None, "INFO", f"Orchestration '{orchestration_code}' complete.")
+        if overall_error := any(Common.Get(result, "Error", False) for result in self.results):
+            self.LogToProfisee(orchestration_code, None, "ERROR", f"Orchestration '{orchestration_code}' completed with errors.")
+        else:
+            self.LogToProfisee(orchestration_code, None, "INFO", f"Orchestration '{orchestration_code}' complete.")
+        
+        return {
+            "Orchestration": orchestration_code,
+            "Error": overall_error,
+            "Results": self.results
+        }
+        
 
     @LogFunction
     def run(self, orchestration_code:str, orchestration_step_code: str, name: str, process_type: str, parameters: dict[str, Any]) -> dict[str, Any]:
         
         since_datetime = datetime.now(timezone.utc)
+        run_errored = False
 
-        result = self.start_process(orchestration_code, orchestration_step_code, name, process_type, parameters)
-
-        result = self.wait_for_completion(orchestration_code, orchestration_step_code, name, process_type, parameters, since_datetime)
+        start_process_result = self.start_process(orchestration_code, orchestration_step_code, name, process_type, parameters)
+        
+        if not Common.Get(start_process_result, "Error", False):
+            wait_for_completion_result = self.wait_for_completion(orchestration_code, orchestration_step_code, name, process_type, parameters, since_datetime)
+            run_errored = Common.Get(wait_for_completion_result, "Error", False)
+        else:
+            run_errored = True
 
         result = {
             "Orchestration": orchestration_code,
@@ -151,7 +156,7 @@ class Orchestration:
             "Name": name,
             "ProcessType": process_type,
             "Parameters": parameters,
-            "Error": False,
+            "Error": run_errored,
             "Message": f"Running orchestration step '{process_type}' '{name}' with {parameters}..."
         }
         self.results.append(result)
@@ -163,6 +168,8 @@ class Orchestration:
         match process_type.lower():
             case "connect":
                 return self.start_process_connect(orchestration_code, orchestration_step_code, name, parameters)
+            case "matching":
+                return self.start_matching_process(orchestration_code, orchestration_step_code, name, parameters)
             case _:
                 return {
                     "Error": True,
@@ -178,16 +185,41 @@ class Orchestration:
                 "response": None
             }
         
-        response = self.API.RunConnectBatch(strategy_name)                
+        response = self.API.RunConnectBatch(strategy_name)        
+        if self.API.StatusCode != 200:
+            self.LogToProfisee(orchestration_code, orchestration_step_code, "ERROR", f"Failed to start Connect Batch for strategy '{strategy_name}'. StatusCode: {self.API.StatusCode}, Response: {self.API.LastResponse.text}")
+            
         return {
-            "Error": False,
+            "Error": self.API.StatusCode != 200,
+            "response": response
+        }
+                
+    @LogFunction
+    def start_matching_process(self, orchestration_code:str, orchestration_step_code: str, strategy_name: str, parameters: dict[str, Any]) -> dict[str, Any]:
+        if self.what_if:
+            self.LogToProfisee(orchestration_code, orchestration_step_code, "INFO", f"WHATIF: Would run Matching for strategy '{strategy_name}'")
+            return {
+                "Error": False,
+                "response": None
+            }
+        
+        process_action = get_enum_from_string(ProcessActions, Common.Get(parameters, "ProcessAction", "MatchingOnly"))    
+        response = self.API.ProcessMatchingActions(strategy_name, process_action)
+
+        if self.API.StatusCode != 200:
+            self.LogToProfisee(orchestration_code, orchestration_step_code, "ERROR", f"Failed to start Matching for strategy '{strategy_name}'. StatusCode: {self.API.StatusCode}, Response: {self.API.LastResponse.text}")
+            
+        return {
+            "Error": self.API.StatusCode != 200,
             "response": response
         }
 
     def get_activity_type_for_process_type(self, process_type: str, parameters: dict[str, Any]) -> str:
         match process_type.lower():
             case "connect":
-                return Common.Get(parameters, "ActivityType", "Connect Strategy Execution")                
+                return Common.Get(parameters, "ActivityType", "Connect Strategy Execution")
+            case "matching":
+                return Common.Get(parameters, "ActivityType", "Clustering & Survivorship")           
             case _:
                 return None
             
@@ -206,18 +238,16 @@ class Orchestration:
         was_successful = False
         
         get_options = GetOptions()
-        get_options.Filter = f"[ActivityType] eq '{self.get_activity_type_for_process_type(process_type, parameters)}' and [Service] eq '{process_type}' and [StartedTime] gt {since_datetime.strftime('%Y-%m-%dT%H:%M:%SZ')}"
-        print(get_options.Filter)
-        
+        get_options.Filter = f"contains([Name], '{name}') and [ActivityType] eq '{self.get_activity_type_for_process_type(process_type, parameters)}' and [Service] eq '{process_type}' and [StartedTime] gt {since_datetime.strftime('%Y-%m-%dT%H:%M:%SZ')}"
+
         while True:
             monitor_activities = self.API.GetMonitorActivities(get_options)
-            print(len(monitor_activities))
 
-            # Now apply the name filter since we can't see to do it as part of the get_options.filter
-            for index, monitor_activity in enumerate(monitor_activities):
-                activity_type = Common.Get(monitor_activity, "Name", "")
-                if name not in activity_type:
-                    del monitor_activities[index]
+            # Now apply the name filter since we can't seem to do it as part of the get_options.filter
+            # for index, monitor_activity in enumerate(monitor_activities):
+            #     activity_type = Common.Get(monitor_activity, "Name", "")
+            #     if name not in activity_type:
+            #         del monitor_activities[index]
         
             if monitor_activities:
                 if first_activity_datetime is None:
@@ -256,7 +286,7 @@ class Orchestration:
     def LogToProfisee(self, orchestration_code: str, orchestration_step_code:str, log_level: str, message: str) -> None:
         if self.should_log(log_level):
             print(f"{datetime.now().strftime('%Y-%m-%d %H:%M:%S')} [{log_level}] : {orchestration_code} {orchestration_step_code} {message}")
-            response = self.API.MergeRecord(self.orchestration_log_entity_name, {
+            self.API.MergeRecord(self.orchestration_log_entity_name, {
                 self.orchestration_entity_name: orchestration_code,
                 self.orchestration_step_entity_name: orchestration_step_code,
                 "LogLevel": log_level,
@@ -320,10 +350,7 @@ class Orchestration:
         else:
             print(f"Base Entity Name '{orchestration_entity_name}' already exists. No action taken. You can delete the entities if you want to re-bootstrap.")
 
-
-
-
-
+# Main entry point
 if __name__ == "__main__":    
     # Do the search for the settings.json file in multiple locations
     # settings.json for running from the command line in the proper folder
@@ -358,7 +385,6 @@ if __name__ == "__main__":
     verify_ssl = Common.Get(settings, "VerifySSL", True)
 
     api = API(profisee_url, client_id, verify_ssl)
-
     
     if args.test:
         print(f"Testing connection to ProfiseeUrl '{profisee_url}' with ClientId '{client_id}' and VerifySSL '{verify_ssl}'")
@@ -385,4 +411,6 @@ if __name__ == "__main__":
     result = orchestration.orchestrate(args.name)
     print(result)
     
+    if Common.Get(result, "Error", False):
+        sys.exit(1)
     sys.exit(0)

@@ -28,7 +28,7 @@ class GetOptions {
         if ($this.Attributes.Count -gt 0) { $queryStrings += "Attributes=$([String]::Join(',', $this.Attributes))" }
         if ($this.DbaFormat -ne [DbaFormatType]::Default) { $queryStrings += "DbaFormat=$([int]$this.DbaFormat)" }
         if ($this.CountsOnly) { $queryStrings += "CountsOnly=true" }
-        return [string]::Join("&", $queryStrings);
+        return [System.Net.WebUtility]::UrlEncode([string]::Join("&", $queryStrings));
     }
 }
 

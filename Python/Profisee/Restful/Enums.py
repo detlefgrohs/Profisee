@@ -1,4 +1,5 @@
 from enum import Enum
+from pyparsing import Any
 
 class DbaFormatEnum(Enum) :
     Default = 0
@@ -47,3 +48,9 @@ class WorkflowInstanceStatus(Enum) :
     Completed = 1
     Suspended = 2
     Running = 3
+
+def get_enum_from_string(enumerations: Enum, string: str) -> Any:
+    for enum in enumerations:
+        if enum.name.lower() == string.lower():
+            return enum
+    raise ValueError(f"Unknown process action: {string}")
