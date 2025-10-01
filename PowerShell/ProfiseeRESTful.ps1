@@ -21,14 +21,14 @@ class GetOptions {
 
     [string] GetQueryStrings() {
         $queryStrings = New-Object System.Collections.Generic.List[string];
-        if ($this.Filter -ne "") { $queryStrings += "Filter=$($this.Filter)" }
+        if ($this.Filter -ne "") { $queryStrings += "Filter=$([System.Net.WebUtility]::UrlEncode($this.Filter))" }
         if ($this.PageNumber -ne 1) { $queryStrings += "PageNumber=$($this.PageNumber)" }
         if ($this.PageSize -ne 50) { $queryStrings += "PageSize=$($this.PageSize)" }
         if ($this.OrderBy -ne "") { $queryStrings += "OrderBy=$($this.OrderBy)" }
         if ($this.Attributes.Count -gt 0) { $queryStrings += "Attributes=$([String]::Join(',', $this.Attributes))" }
         if ($this.DbaFormat -ne [DbaFormatType]::Default) { $queryStrings += "DbaFormat=$([int]$this.DbaFormat)" }
         if ($this.CountsOnly) { $queryStrings += "CountsOnly=true" }
-        return [System.Net.WebUtility]::UrlEncode([string]::Join("&", $queryStrings));
+        return [string]::Join("&", $queryStrings);
     }
 }
 
