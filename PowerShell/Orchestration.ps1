@@ -27,6 +27,7 @@ $client_id = $Global:Settings.ClientId
 # $verify_ssl = $Global:Settings.VerifySSL # Don't need this for the PowerShell Restful Operations
 
 $api = [ProfiseeRestful]::new($profisee_url, $client_id);
+$api.LogLevel = [LogType]::Debug
 
 if ($test) {
     $result = $api.GetEntities();

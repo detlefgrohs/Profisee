@@ -62,6 +62,7 @@ class Orchestration {
     }
 
     [object] Orchestrate($orchestration_code) {
+        $this.LogToProfisee($orchestration_code, $null, "DEBUG", "Orchestrate($($orchestration_code))")
         $orchestration, $orchestration_parameters = $this.GetOrchestration($orchestration_code);
         if ($orchestration -eq $null) {
             return @{
@@ -80,6 +81,8 @@ class Orchestration {
 
         $this.GetOrchestrationSteps($orchestration.Code) | ForEach-Object {
             $orchestration_step = $_
+            
+            $this.LogToProfisee($orchestration_code, $null, "DEBUG", "OrchestrationStep($($orchestration_step))")
 
             $strategy_name = $orchestration_step.Name
             $orchestration_step_code = $orchestration_step.Code
@@ -98,13 +101,14 @@ class Orchestration {
                 }
                 # ToDo: Implement threading
                 $result = $this.Run($orchestration_code, $orchestration_step_code, $strategy_name, $process_type, $parameters);
-                $this.Results += $result;
+                
                 if ($abort_on_error -and $result.Error -eq $true) {
                     $this.LogToProfisee($orchestration.Code, $orchestration_step_code, "ERROR", "Aborting orchestration '$($Name)' due to error in step '$($orchestration_step_code)' '$($strategy_name)'.");
-                    return @{
-                        "Error" = $true;
-                        "Message" = "Orchestration '$($Name)' aborted due to error in step '$($orchestration_step_code)' '$($strategy_name)'.";
-                    }
+                    break;
+                    # return @{
+                    #     "Error" = $true;
+                    #     "Message" = "Orchestration '$($Name)' aborted due to error in step '$($orchestration_step_code)' '$($strategy_name)'.";
+                    # }
                 }
 
             } else {
@@ -131,22 +135,28 @@ class Orchestration {
             $this.LogToProfisee($orchestration.Code, $null, "INFO", "Orchestration '$($orchestration_code)' completed successfully.");
         }
 
-        return @{
+        $return_value = @{
             "Orchestration" = $orchestration_code;
             "Error" = $overall_error;
             "Results" = $this.Results;
         }
+        $this.LogToProfisee($orchestration_code, $null, "DEBUG", "Orchestrate() => $($return_value | ConvertTo-Json)")
+        return $return_value;
     }
 
     [object] Run($orchestration_code, $orchestration_step_code, $strategy_name, $process_type, $parameters) {
+        $this.LogToProfisee($orchestration_code, $orchestration_step_code, "DEBUG", "Run()")
 
-        $since_datetime = Get-Date -AsUTC
+        $since_datetime = (Get-Date -AsUTC)
         $run_errored = $false;
 
         $start_process_result = $this.StartProcess($orchestration_code, $orchestration_step_code, $strategy_name, $process_type, $parameters);
+        $this.LogToProfisee($orchestration_code, $orchestration_step_code, "DEBUG", "start_process_result = '$($start_process_result | ConvertTo-Json)'")
 
         if ($null -eq $start_process_result -or $start_process_result.Error -eq $false) {
             $wait_for_completion_result = $this.WaitForCompletion($orchestration_code, $orchestration_step_code, $strategy_name, $process_type, $parameters, $since_datetime);
+            Write-Host ($wait_for_completion_result | ConvertTo-Json)
+
             $run_errored = $wait_for_completion_result.Error;
         } else {
             $run_errored = $true
@@ -226,6 +236,8 @@ class Orchestration {
     }
 
     [object] WaitForCompletion($orchestration_code, $orchestration_step_code, $strategy_name, $process_type, $parameters, $since_datetime) {
+        $this.LogToProfisee($orchestration_code, $orchestration_step_code, "DEBUG", "WaitForCompletion()")
+        
         if ($this.what_if) {
             $this.LogToProfisee($orchestration_code, $orchestration_step_code, "INFO", "(WhatIf) Waiting for completion of process type '$($process_type)' for step '$($orchestration_step_code)' '$($strategy_name)'...");
             return @{
@@ -243,14 +255,18 @@ class Orchestration {
         $since_datetime_as_string = $since_datetime.ToString("yyyy-MM-ddTHH:mm:ssZ");
 
         $get_options = [GetOptions]::new();
-        $get_options.Filter = "contains([Name], '$($strategy_name)') and [ActivityType] eq '$($activity_type)' and [Service] eq '$($process_type)' and [StartedTime] gt $($since_datetime_as_string)"
+        #$get_options.Filter = "contains([Name], '$($strategy_name)') and [ActivityType] eq '$($activity_type)' and [Service] eq '$($process_type)' and [StartedTime] gt $($since_datetime_as_string)"
+        $get_options.Filter = "[ActivityType] eq '$($activity_type)' and [Service] eq '$($process_type)' and [StartedTime] gt $($since_datetime_as_string)"
+        
+        Write-Host $get_options.Filter
+        $this.LogToProfisee($orchestration_code, $orchestration_step_code, "DEBUG", "get_options = $($get_options.GetQueryStrings())")
 
         $monitor_activities = @()
         while ($true) {
             $monitor_activities = $this.API.GetMonitorActivities($get_options);
 
             if ($monitor_activities.Count -gt 0) {
-                if ($null -eq $first_activity_datetime) { $first_activity_datetime = (Get-Date)}
+                if ($null -eq $first_activity_datetime) { $first_activity_datetime = (Get-Date) }
 
                 $number_of_not_running = 0
                 $number_of_succeeded = 0
@@ -306,6 +322,20 @@ class Orchestration {
         }
     }
 
+    [object] WrapWithTryCatch([ScriptBlock] $ScriptBlock) {
+        try {
 
+            $return_value = & $ScriptBlock;
+
+            return $return_value;
+        } catch {
+            # $exceptionMessage = ($this.HandleRestException($_))
+            # $this.LogMessage("Exception: $($exceptionMessage)", [LogType]::Error);
+            # $this.LastResponse = $exceptionMessage;
+            # # DG ToDo: if $exceptionMessage is null create another response...
+            return $null
+        }
+        return $null;
+    }
 
 }
