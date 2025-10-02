@@ -49,9 +49,6 @@ $orchestration = [Orchestration]::new($api, $orchestration_entity_name);
 $orchestration.what_if = $whatif;
 $result = $orchestration.Orchestrate($Name);
 
-$orchestration.MinLogLevel
-$orchestration.ActivityPollingInterval
-
 if ($result.Error -eq $true) {
     Write-Host "Orchestration '$($Name)' failed with error: $($result.Message)"
     exit(1)

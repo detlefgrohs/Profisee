@@ -216,7 +216,16 @@ class Orchestration {
         }
 
         # ToDo: Implement ProcessActions
+        $process_action_as_string = $parameters.ProcessAction;
         $process_action = [ProcessActions]::MatchingOnly
+        if (-not [string]::IsNullOrEmpty($process_action_as_string)) {
+            try {
+                $process_action = [ProcessActions]$process_action_as_string
+            } catch {
+                $this.LogToProfisee($orchestration_code, $orchestration_step_code, "ERROR", "Unknown ProcessAction '$($process_action_as_string)'.");
+            }
+        }
+
         $response = $this.API.ProcessMatchingActions($strategy_name, $process_action);  # ToDo: Add Filters
         # Check for error...
         return @{
@@ -310,7 +319,7 @@ class Orchestration {
 
     [void] LogToProfisee($orchestration_code, $orchestration_step_code, $log_level, $message) {
         if ($this.ShouldLog([DebugLogLevel]$log_level)) {
-            Write-Host "$() [$($log_level)] : $($orchestration_code) $($orchestration_step_code) $($message)"
+            Write-Host "$((Get-Date).ToString()) [$($log_level)] : $($orchestration_code) $($orchestration_step_code) $($message)"
 
             $log_record = @{
                 $this.OrchestrationEntityName = $orchestration_code;
