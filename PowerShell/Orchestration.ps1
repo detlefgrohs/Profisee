@@ -1,5 +1,7 @@
 param(
     $Name = "Export",
+    [string]$ProfiseeUrl = $null,
+    [string]$ClientId = $null,
     [switch]$bootstrap = $false,
     [switch]$test = $false,
     [switch]$whatif = $false
@@ -22,20 +24,32 @@ if ($Name -eq $null -and $bootstrap -eq $false -and $test -eq $false) {
     exit 1
 }
 
-$profisee_url = $Global:Settings.ProfiseeUrl
-$client_id = $Global:Settings.ClientId
+Write-Host $ClientId
+
+if ([string]::IsNullOrEmpty($ProfiseeUrl)) {
+    $ProfiseeUrl = $Global:Settings.ProfiseeUrl
+}
+if ([string]::IsNullOrEmpty($ClientId)) {
+    $ClientId = $Global:Settings.ClientId
+}
 # $verify_ssl = $Global:Settings.VerifySSL # Don't need this for the PowerShell Restful Operations
 
-$api = [ProfiseeRestful]::new($profisee_url, $client_id);
+if ([string]::IsNullOrEmpty($ProfiseeUrl) -or [string]::IsNullOrEmpty($ClientId)) {
+    Write-Host "The -ProfiseeUrl and -ClientId must be provided via the command line or the settings.json file."
+    exit(1)
+}
+
+$api = [ProfiseeRestful]::new($ProfiseeUrl, $ClientId);
 $api.LogLevel = [LogType]::Debug
 
 if ($test) {
     $result = $api.GetEntities();
-    if ($api.StatusCode -ne 200) {
-        Write-Host "Failed to connect to Profisee API at '$($profisee_url)' with ClientID '$($client_id)'. StatusCode: $($api.StatusCode). Exiting."
+    
+    if ($result -eq $null) { #$api.StatusCode() -ne 200) {
+        Write-Host "Failed to connect to Profisee API at '$($ProfiseeUrl)' with ClientID '$($ClientId)'. StatusCode: $($api.StatusCode()). Exiting."
         exit(1)
     } else {
-        Write-Host "Successfully connected to Profisee API at '$($profisee_url)' with ClientID '$($client_id)'. StatusCode: $($api.StatusCode)."
+        Write-Host "Successfully connected to Profisee API at '$($ProfiseeUrl)' with ClientID '$($ClientId)'. StatusCode: $($api.StatusCode())."
         exit(0)
     }
 }

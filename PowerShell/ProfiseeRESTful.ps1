@@ -40,7 +40,7 @@ class ProfiseeRestful {
     $Logger;
     $LastResponse;
     [bool]$LogData = $false;
-    [LogType]$LogLevel = [LogType]::Info;
+    [LogType]$LogLevel = [LogType]::Info;    
 
     ProfiseeRestful($Environment) {
         $Settings = ((Get-Content "$Global:ExecutionDirectory\settings.json") | ConvertFrom-Json)
@@ -61,6 +61,9 @@ class ProfiseeRestful {
         return $false;
     }
 
+    [int] StatusCode() {
+        return $this.LastResponse.StatusCode
+    }
 
     [object] GetConnectServiceProviders() {
         $this.LogMessage("GetConnectServiceProviders()", [LogType]::Info);
@@ -451,7 +454,7 @@ class ProfiseeRestful {
         }
 
         return $this.WrapWithTryCatch({
-                $Global:LastResponse = Invoke-RestMethod -Uri $this.GetProfiseeRESTfulUri("Records/$($Entity)") `
+                $this.LastResponse = Invoke-RestMethod -Uri $this.GetProfiseeRESTfulUri("Records/$($Entity)") `
                     -Method PATCH `
                     -Headers $this.GetProfiseeRESTfulHeader() `
                     -Body (ConvertTo-Json $Body);
@@ -459,7 +462,7 @@ class ProfiseeRestful {
                 $this.LogMessage("   Response = '$($this.LastResponse)'", [LogType]::Debug);
                 $this.DumpProfiseeErrors();
                 $this.DumpProfiseeData();
-                return $Global:LastResponse;
+                return $this.LastResponse;
             });
     }
     
@@ -467,13 +470,13 @@ class ProfiseeRestful {
         $this.LogMessage("DeleteRecord(Entity = '$($Entity)', Code = '$($Code)')", [LogType]::Info);
     
         return $this.WrapWithTryCatch({
-                $Global:LastResponse = Invoke-RestMethod -Uri $this.GetProfiseeRESTfulUri("Records/$($Entity)?RecordCodes=$($Code)") `
+                $this.LastResponse = Invoke-RestMethod -Uri $this.GetProfiseeRESTfulUri("Records/$($Entity)?RecordCodes=$($Code)") `
                     -Method DELETE `
                     -Headers $this.GetProfiseeRESTfulHeader() 
                 $this.LogMessage("   Method = DELETE", [LogType]::Debug);
                 $this.LogMessage("   Response = '$($this.LastResponse)'", [LogType]::Debug);
                 $this.DumpProfiseeErrors();
-                return $Global:LastResponse;                        
+                return $this.LastResponse;                        
             });
     }
     
@@ -481,13 +484,13 @@ class ProfiseeRestful {
         $this.LogMessage("DeleteRecords(Entity = '$($Entity)', Codes = '$([String]::Join(',', $Codes))')", [LogType]::Info);
 
         return $this.WrapWithTryCatch({
-                $Global:LastResponse = Invoke-RestMethod -Uri $this.GetProfiseeRESTfulUri("Records/$($Entity)?RecordCodes=$($Codes -join ',')") `
+                $this.LastResponse = Invoke-RestMethod -Uri $this.GetProfiseeRESTfulUri("Records/$($Entity)?RecordCodes=$($Codes -join ',')") `
                     -Method DELETE `
                     -Headers $this.GetProfiseeRESTfulHeader() 
                 $this.LogMessage("   Method = DELETE", [LogType]::Debug);
                 $this.LogMessage("   Response = '$($this.LastResponse)'", [LogType]::Debug);
                 $this.DumpProfiseeErrors();    
-                return $Global:LastResponse;    
+                return $this.LastResponse;    
             });
     }
     #########################################################################
@@ -499,26 +502,26 @@ class ProfiseeRestful {
         $this.LogMessage("GetEntities()", [LogType]::Info);
 
         return $this.WrapWithTryCatch({
-                $Global:LastResponse = Invoke-RestMethod -Uri $this.GetProfiseeRESTfulUri("Entities") `
+                $this.LastResponse = Invoke-RestMethod -Uri $this.GetProfiseeRESTfulUri("Entities") `
                     -Method GET `
                     -Headers $this.GetProfiseeRESTfulHeader() 
                 $this.LogMessage("   Method = GET", [LogType]::Debug);
                 $this.LogMessage("   Response = '$($this.LastResponse)'", [LogType]::Debug);
                 $this.DumpProfiseeErrors();    
-                return (, $Global:LastResponse.data);
+                return (, $this.LastResponse.data);
             });
     }
     [object] GetAttributes($Entity) {
         $this.LogMessage("GetAttributes(Entity = '$($Entity)')", [LogType]::Info);
 
         return $this.WrapWithTryCatch({
-                $Global:LastResponse = Invoke-RestMethod -Uri $this.GetProfiseeRESTfulUri("Entities/$($Entity)/attributes") `
+                $this.LastResponse = Invoke-RestMethod -Uri $this.GetProfiseeRESTfulUri("Entities/$($Entity)/attributes") `
                     -Method GET `
                     -Headers $this.GetProfiseeRESTfulHeader() 
                 $this.LogMessage("   Method = GET", [LogType]::Debug);
                 $this.LogMessage("   Response = '$($this.LastResponse)'", [LogType]::Debug);
                 $this.DumpProfiseeErrors();    
-                return (, $Global:LastResponse.data);  
+                return (, $this.LastResponse.data);  
             });
     }
 
@@ -526,14 +529,14 @@ class ProfiseeRestful {
         $this.LogMessage("UpdateAttributes()", [LogType]::Info);
 
         return $this.WrapWithTryCatch({
-                $Global:LastResponse = Invoke-RestMethod -Uri $this.GetProfiseeRESTfulUri("Attributes") `
+                $this.LastResponse = Invoke-RestMethod -Uri $this.GetProfiseeRESTfulUri("Attributes") `
                     -Method PUT `
                     -Headers $this.GetProfiseeRESTfulHeader() `
                     -Body (ConvertTo-Json $Body -Depth 100);
                 $this.LogMessage("   Method = PUT", [LogType]::Debug);
                 $this.LogMessage("   Response = '$($this.LastResponse)'", [LogType]::Debug);
                 $this.DumpProfiseeErrors();    
-                return (, $Global:LastResponse.data);  
+                return (, $this.LastResponse.data);  
             });
     }
 
@@ -541,13 +544,13 @@ class ProfiseeRestful {
         $this.LogMessage("GetDataQualityRules()", [LogType]::Info);
 
         return $this.WrapWithTryCatch({
-                $Global:LastResponse = Invoke-RestMethod -Uri $this.GetProfiseeRESTfulUri("Rules") `
+                $this.LastResponse = Invoke-RestMethod -Uri $this.GetProfiseeRESTfulUri("Rules") `
                     -Method GET `
                     -Headers $this.GetProfiseeRESTfulHeader() 
                 $this.LogMessage("   Method = GET", [LogType]::Debug);
                 $this.LogMessage("   Response = '$($this.LastResponse)'", [LogType]::Debug);
                 $this.DumpProfiseeErrors();    
-                return (, $Global:LastResponse.data);
+                return (, $this.LastResponse.data);
             });
     }
 
@@ -555,13 +558,13 @@ class ProfiseeRestful {
         $this.LogMessage("GetDataQualityRule($($Uid))", [LogType]::Info);
 
         return $this.WrapWithTryCatch({
-                $Global:LastResponse = Invoke-RestMethod -Uri $this.GetProfiseeRESTfulUri("Rules/$($Uid)") `
+                $this.LastResponse = Invoke-RestMethod -Uri $this.GetProfiseeRESTfulUri("Rules/$($Uid)") `
                     -Method GET `
                     -Headers $this.GetProfiseeRESTfulHeader() 
                 $this.LogMessage("   Method = GET", [LogType]::Debug);
                 $this.LogMessage("   Response = '$($this.LastResponse)'", [LogType]::Debug);
                 $this.DumpProfiseeErrors();    
-                return $Global:LastResponse;
+                return $this.LastResponse;
             });
     }
 
@@ -569,14 +572,14 @@ class ProfiseeRestful {
         $this.LogMessage("MergeDataQualityRules()", [LogType]::Info);
 
         return $this.WrapWithTryCatch({
-                $Global:LastResponse = Invoke-RestMethod -Uri $this.GetProfiseeRESTfulUri("Rules") `
+                $this.LastResponse = Invoke-RestMethod -Uri $this.GetProfiseeRESTfulUri("Rules") `
                     -Method PUT `
                     -Headers $this.GetProfiseeRESTfulHeader() `
                     -Body (ConvertTo-Json $Body -Depth 100);
                 $this.LogMessage("   Method = PUT", [LogType]::Debug);
                 $this.LogMessage("   Response = '$($this.LastResponse)'", [LogType]::Debug);
                 $this.DumpProfiseeErrors();    
-                return (, $Global:LastResponse.data);
+                return (, $this.LastResponse.data);
             });
     }
 
@@ -587,13 +590,13 @@ class ProfiseeRestful {
         $this.LogMessage("GetLogEvents()", [LogType]::Info);
 
         return $this.WrapWithTryCatch({
-                $Global:LastResponse = Invoke-RestMethod -Uri $this.GetProfiseeRESTfulUri("LogEvents?PageNumber=1&PageSize=50") `
+                $this.LastResponse = Invoke-RestMethod -Uri $this.GetProfiseeRESTfulUri("LogEvents?PageNumber=1&PageSize=50") `
                     -Method GET `
                     -Headers $this.GetProfiseeRESTfulHeader() 
                 $this.LogMessage("   Method = GET", [LogType]::Debug);
                 $this.LogMessage("   Response = '$($this.LastResponse)'", [LogType]::Debug);
                 $this.DumpProfiseeErrors();    
-                return (, $Global:LastResponse.data);  
+                return (, $this.LastResponse.data);  
             });
     }
 
