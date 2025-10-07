@@ -103,6 +103,7 @@ namespace Profisee.MDM.OrchestrationCLU
             {
                 Console.WriteLine($"Running Orchestration '{commandLineOptions.Name}' from Instance");
                 var orchestration = new Orchestration(api, LoggerAction);
+                Program.MinLogLevel = orchestration.MinLogLevel;
                 orchestration.WhatIf = commandLineOptions.WhatIf;
                 var (returnCode, message) = orchestration.Orchestrate(commandLineOptions.Name);
                 Console.WriteLine(message);
@@ -115,16 +116,21 @@ namespace Profisee.MDM.OrchestrationCLU
 
             return 0;
         }
+        private static LogLevel MinLogLevel = LogLevel.Information;
+        private static bool ShouldLog(LogLevel level) {
+            return level >= Program.MinLogLevel;
+        }
         public static void LoggerAction(LogLevel logLevel, string message)
         {
-            Console.WriteLine($"[{logLevel}] {message}");
+            if (ShouldLog(logLevel))
+                Console.WriteLine($"[{logLevel}] {message}");
         }
         public static dynamic LoadSettings()
         {
             try
             {
                 using StreamReader r = new StreamReader("settings.json");
-                    return Orchestration.ParseJson(r.ReadToEnd(), "{}");
+                    return Orchestration.ParseJson(r.ReadToEnd(), "{ \"MinLogLevel\" : \"Information\", \"ActivityPollingInterval\" : 5 }");
             }
             catch (Exception)
             {
@@ -132,15 +138,5 @@ namespace Profisee.MDM.OrchestrationCLU
             }
             return Orchestration.ParseJson("{}", string.Empty);
         }
-
-        //public static object GetPropertyValue(dynamic obj, string name, object defaultValue)
-        //{
-        //    foreach (var prop in obj.Children())
-        //    {
-        //        if (((string)prop.Name).Equals(name, StringComparison.InvariantCultureIgnoreCase))
-        //            return prop.Value.Value; // Weird that we have to get the value of the value...
-        //    }
-        //    return defaultValue;
-        //}
     }
 }

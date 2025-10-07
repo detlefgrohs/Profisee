@@ -9,7 +9,7 @@ namespace Profisee.MDM {
         private string OrchestrationStepEntityName = "OrchestrationStep";
         private string OrchestrationLogEntityName = "OrchestrationLog";
         public bool WhatIf { get; set; } = false;
-        private LogLevel MinLogLevel = LogLevel.Information;
+        public LogLevel MinLogLevel = LogLevel.Information;
         private int ActivityPollingInterval = 15;
 
         private List<dynamic> Results = new List<dynamic>();
@@ -63,10 +63,6 @@ namespace Profisee.MDM {
             var (orchestrationMember, orchestrationParameters) = GetOrchestration(orchestrationCode);
             if (orchestrationMember == null || orchestrationParameters == null) {
                 return (1, $"Orchestration '{orchestrationCode}' not found or has invalid parameters.");
-                //return new {
-                //    Error = true,
-                //    Message = $"Orchestration '{orchestrationCode}' not found or has invalid parameters."
-                //};
             }
 
             var threaded = orchestrationMember.Get<string>("Mode", "Sequential") == "Concurrent";
@@ -124,11 +120,6 @@ namespace Profisee.MDM {
                 LogToProfisee(orchestrationCode, null, LogLevel.Information, $"Orchestration '{orchestrationCode}' completed successfully.");
 
             return (overallError ? 1 : 0, $"Orchestration '{orchestrationCode}' completed {(overallError ? "with errors" : "successfully")}.");
-            //return new {
-            //    Orchestration = orchestrationCode,
-            //    Error = overallError,
-            //    Results = this.Results
-            //};
         }
 
         private dynamic? Run(string orchestrationCode, string stepCode, string strategyName, string processType, dynamic parameters) {
@@ -149,7 +140,7 @@ namespace Profisee.MDM {
                     }
 
                     var result = new {
-                        Orchestrate = orchestrationCode,
+                        Orchestration = orchestrationCode,
                         OrchestrationStep = stepCode,
                         Name = strategyName,
                         ProcessType = processType,
@@ -190,7 +181,8 @@ namespace Profisee.MDM {
                         };
                     }
 
-                    var response = _api.RunConnectBatch(strategyName);
+                    string? filter = Orchestration.GetPropertyValue(parameters, "Filter", null);
+                    var response = _api.RunConnectBatch(strategyName, filter);
 
                     if (_api.StatusCode != System.Net.HttpStatusCode.OK)
                         LogToProfisee(orchestrationCode, stepCode, LogLevel.Error, $"   Error starting Connect process '{strategyName}'. StatusCode={_api.StatusCode}, Response={response}");
