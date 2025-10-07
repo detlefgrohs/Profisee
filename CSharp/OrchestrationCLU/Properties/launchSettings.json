@@ -1,0 +1,8 @@
+{
+  "profiles": {
+    "OrchestrationCLU": {
+      "commandName": "Project",
+      "commandLineArgs": "--name TEST"
+    }
+  }
+}

@@ -4,7 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace Common {
+namespace Profisee.MDM{
     public  class Wrappers {
         static public void WrapWithTryCatch(string message, Action<LogLevel, string> LoggerAction, Action action) {
             try {

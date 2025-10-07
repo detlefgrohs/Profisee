@@ -22,3 +22,17 @@ Python/settings_private.json
 workarea_freeman_canonical_model.dbml
 
 workarea_generate_diagram.dbml
+
+CSharp/.vs
+CSharp/Orchestration/obj
+CSharp/Orchestration/bin
+
+CSharp/OrchestrationCLU/obj
+CSharp/OrchestrationCLU/bin
+
+CSharp/RestfulAPI/bin
+CSharp/RestfulAPI/obj
+
+CSharp/UnitTests/bin
+CSharp/UnitTests/obj
+

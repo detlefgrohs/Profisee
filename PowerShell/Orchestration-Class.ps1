@@ -140,7 +140,7 @@ class Orchestration {
             "Error" = $overall_error;
             "Results" = $this.Results;
         }
-        $this.LogToProfisee($orchestration_code, $null, "DEBUG", "Orchestrate() => $($return_value | ConvertTo-Json)")
+        $this.LogToProfisee($orchestration_code, $null, "DEBUG", "Orchestrate() => $($return_value | ConvertTo-Json -Compress -Depth 100)")
         return $return_value;
     }
 
@@ -151,11 +151,11 @@ class Orchestration {
         $run_errored = $false;
 
         $start_process_result = $this.StartProcess($orchestration_code, $orchestration_step_code, $strategy_name, $process_type, $parameters);
-        $this.LogToProfisee($orchestration_code, $orchestration_step_code, "DEBUG", "start_process_result = '$($start_process_result | ConvertTo-Json)'")
+        $this.LogToProfisee($orchestration_code, $orchestration_step_code, "DEBUG", "start_process_result = '$($start_process_result | ConvertTo-Json -Compress -Depth 100)'")
 
         if ($null -eq $start_process_result -or $start_process_result.Error -eq $false) {
             $wait_for_completion_result = $this.WaitForCompletion($orchestration_code, $orchestration_step_code, $strategy_name, $process_type, $parameters, $since_datetime);
-            Write-Host ($wait_for_completion_result | ConvertTo-Json)
+            Write-Host ($wait_for_completion_result | ConvertTo-Json -Compress -Depth 100)
 
             $run_errored = $wait_for_completion_result.Error;
         } else {
@@ -191,7 +191,7 @@ class Orchestration {
 
     [object] StartProcessConnect($orchestration_code, $orchestration_step_code, $strategy_name, $parameters) {
         if ($this.what_if) {
-            $this.LogToProfisee($orchestration_code, $orchestration_step_code, "INFO", "(WhatIf) Starting Connect process '$($strategy_name)' with parameters: $(ConvertTo-Json -InputObject $parameters)");
+            $this.LogToProfisee($orchestration_code, $orchestration_step_code, "INFO", "(WhatIf) Starting Connect process '$($strategy_name)' with parameters: $(ConvertTo-Json -Compress -Depth 100 -InputObject $parameters)");
             return @{
                 "Error" = $false;
                 "Response" = $null            
@@ -208,7 +208,7 @@ class Orchestration {
 
     [object] StartProcessMatching($orchestration_code, $orchestration_step_code, $strategy_name, $parameters) {
         if ($this.what_if) {
-            $this.LogToProfisee($orchestration_code, $orchestration_step_code, "INFO", "(WhatIf) Starting Matching process '$($strategy_name)' with parameters: $(ConvertTo-Json -InputObject $parameters)");
+            $this.LogToProfisee($orchestration_code, $orchestration_step_code, "INFO", "(WhatIf) Starting Matching process '$($strategy_name)' with parameters: $(ConvertTo-Json -Compress -Depth 100 -InputObject $parameters)");
             return @{
                 "Error" = $false;
                 "Response" = $null

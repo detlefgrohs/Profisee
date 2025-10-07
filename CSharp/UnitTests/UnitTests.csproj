@@ -23,6 +23,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\Orchestration\Orchestration.csproj" />
     <ProjectReference Include="..\RestfulAPI\RestfulAPI.csproj" />
   </ItemGroup>
 

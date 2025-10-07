@@ -5,7 +5,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace Common {
+namespace Profisee.MDM {
     public class RestfulMember {
         public dynamic Member { get; set; }
         public string Name {
@@ -27,18 +27,19 @@ namespace Common {
             foreach (var item in values)
                 this.Set(item.Key, item.Value);
         }
-        public T Get<T>(string name) {
-            try {
-                return (T)Convert.ChangeType(Get(name), typeof(T));
-            } catch { }
-            return default(T);
+        public T Get<T>(string name, object defaultValue) {
+            var value = Get(name, defaultValue);
+            if (value == null) {
+                return default(T)!; // Return default value for T, null-forgiving for reference types
+            }
+            return (T)Convert.ChangeType(value, typeof(T));
         }
-        public object Get(string name) {
+        public object? Get(string name, object? defaultValue = null) {
             foreach (var prop in Member.Children()) {
                 if (((string)prop.Name).Equals(name, StringComparison.InvariantCultureIgnoreCase))
                     return prop.Value.Value; // Weird that we have to get the value of the value...
             }
-            return null;
+            return defaultValue;
         }
         public void Set(string name, object value) {
             try {

@@ -5,12 +5,23 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
+using System.Net;
+using System.Reflection.Emit;
 using System.Text;
 using System.Threading.Tasks;
+using System.Web;
+using static Profisee.MDM.RestfulAPI;
 using static System.Runtime.InteropServices.JavaScript.JSType;
 
-namespace Common {
-    public class RestfulAPI {
+namespace Profisee.MDM {
+    public enum ProcessAction {
+        MatchingOnly = 0,
+        MatchingAndSurvivorship = 1,
+        SurvivorshipOnly = 2,
+        ClearPriorResults = 3,
+        ClearAllPriorResults = 4
+    }
+public class RestfulAPI {
         //private readonly ILogger<CreateCloudEventFunction> Logger;
 
         private readonly Action<LogLevel, string> LoggerAction;
@@ -18,6 +29,7 @@ namespace Common {
         private string ProfiseeUrl;
         private string ClientId;
         public dynamic LastResponse { get; set; }
+        public HttpStatusCode StatusCode { get; set; }
 
         public RestfulAPI(string url, string clientId, Action<LogLevel, string> loggerAction) { // ILogger<CreateCloudEventFunction> logger) {
             ProfiseeUrl = url;
@@ -31,36 +43,57 @@ namespace Common {
             client.AddDefaultHeader("x-api-key", ClientId);
             return client;
         }
+        private void SetStatusCode(RestResponse response)
+        {
+            LoggerAction(LogLevel.Debug, $"   StatusCode = {response.StatusCode}");
+            LoggerAction(LogLevel.Debug, $"   LastResponse = {response.Content}"); 
+            this.StatusCode = response.StatusCode;
+        }
         private RestResponse GetResponse(string url) {
             LoggerAction(LogLevel.Debug, $"   GetResponse(\"{url}\")");
             //Logger.LogDebug($"   GetResponse(\"{url}\")");
-            var request = new RestRequest(url, Method.Get);
+            var request = new RestRequest(url, Method.Get);            
             var response = GetRestClient().Get(request);
-            LoggerAction(LogLevel.Debug, $"   LastResponse = {response.Content}");
-            //Logger.LogDebug($"   LastResponse = {response.Content}");
+            SetStatusCode(response);
             return response;
         }
-        private RestResponse MergeResponse(string url, JArray bodyArray) {
-            LoggerAction(LogLevel.Debug, $"   MergeResponse(\"{url}\")");
+        private RestResponse PatchResponse(string url, dynamic body) { // JArray bodyArray) {
+            LoggerAction(LogLevel.Debug, $"   PatchResponse(\"{url}\")");
 
-            var index = 0;
-            foreach (var data in bodyArray) {
-                var dataAsString = data.ToString().Replace(Environment.NewLine, "");
-                LoggerAction(LogLevel.Debug, $"   body[{index}] = '{dataAsString}'");
-                index += 1;
-            }
+            //var index = 0;
+            //foreach (var data in bodyArray) {
+            //    var dataAsString = data.ToString().Replace(Environment.NewLine, "");
+            //    LoggerAction(LogLevel.Debug, $"   body[{index}] = '{dataAsString}'");
+            //    index += 1;
+            //}
+            var bodyAsString = Newtonsoft.Json.JsonConvert.SerializeObject(body);
+            LoggerAction(LogLevel.Debug, $"   body = '{bodyAsString}'");
 
             var request = new RestRequest(url, Method.Patch);
-            request.AddStringBody(bodyArray.ToString(), DataFormat.Json);
+            // Fix: Cast request to RestRequest to avoid dynamic dispatch for extension method
+            RestSharp.RestRequestExtensions.AddStringBody((RestRequest)request, bodyAsString, DataFormat.Json);
             var response = GetRestClient().Patch(request);
-            LoggerAction(LogLevel.Debug, $"   LastResponse = {response.Content}");
+            SetStatusCode(response);
+            return response;
+        }
+        private RestResponse PostRequest(string url, dynamic body) {
+            LoggerAction(LogLevel.Debug, $"   PostResponse(\"{url}\")");
+
+            var bodyAsString = Newtonsoft.Json.JsonConvert.SerializeObject(body);
+            LoggerAction(LogLevel.Debug, $"   body = '{bodyAsString}'");
+
+            var request = new RestRequest(url, Method.Post);
+            // Fix: Cast request to RestRequest to avoid dynamic dispatch for extension method
+            RestSharp.RestRequestExtensions.AddStringBody((RestRequest)request, bodyAsString, DataFormat.Json);
+            var response = GetRestClient().Post(request);
+            SetStatusCode(response);
             return response;
         }
         private RestResponse DeleteResponse(string url) {
             LoggerAction(LogLevel.Debug, $"   DeleteResponse(\"{url}\"");
             var request = new RestRequest(url, Method.Delete);
             var response = GetRestClient().Delete(request);
-            LoggerAction(LogLevel.Debug, $"   LastResponse = {response.Content}");
+            SetStatusCode(response);
             return response;
         }
         private void DumpProfiseeErrors() {
@@ -131,14 +164,14 @@ namespace Common {
 
             //return Wrappers.WrapWithTryCatch("MergeMember", LoggerAction, () => {
             try {
-                var bodyArray = new JArray();
-                foreach (var member in members)
-                    bodyArray.Add(member);
+                //var bodyArray = new JArray();
+                //foreach (var member in members)
+                //    bodyArray.Add(member);
 
                 var mergeOptions = string.Empty;
                 if (autoAddAllDbas) mergeOptions = "?autoAddAllDbas=true";
 
-                var response = MergeResponse($"/rest/v1/records/{entityName}{mergeOptions}", bodyArray);
+                var response = PatchResponse($"/rest/v1/records/{entityName}{mergeOptions}", members);
                 LastResponse = JsonConvert.DeserializeObject<dynamic>(response.Content);
                 DumpProfiseeErrors();
                 return LastResponse;
@@ -153,12 +186,78 @@ namespace Common {
             return DeleteMembers(entityName, new List<string> { code });
         }
 
-        public dynamic DeleteMembers(string entityName, List<string> codes) {
+        public dynamic? DeleteMembers(string entityName, List<string> codes) {
             LoggerAction(LogLevel.Information, $"DeleteMembers({entityName}, {string.Join(",", codes)})");
 
             return Wrappers.WrapWithTryCatch("DeleteMembers", LoggerAction, () => {
                 var response = DeleteResponse($"/rest/v1/records/{entityName}?RecordCodes={string.Join(",", codes)}");
                 LastResponse = JsonConvert.DeserializeObject<dynamic>(response.Content);
+                DumpProfiseeErrors();
+                return LastResponse;
+            });
+        }
+
+        public dynamic? GetEntities()
+        {
+            LoggerAction(LogLevel.Information, $"GetEntities()");
+
+            return Wrappers.WrapWithTryCatch("GetEntities", LoggerAction, () => {
+                var response = GetResponse($"/rest/v1/entities");
+                LastResponse = JsonConvert.DeserializeObject<dynamic>(response.Content);
+                DumpProfiseeErrors();
+                return LastResponse;
+            });
+        }
+
+        public dynamic GetMonitorActivities(GetOptions getOptions = null) {
+            if (getOptions == null) {
+                getOptions = new GetOptions();
+                getOptions.OrderBy.Add("[StartedTime] desc");
+            }
+
+            LoggerAction(LogLevel.Information, $"GetMonitorActivities({getOptions.QueryString()})");
+
+            return Wrappers.WrapWithTryCatch("GetMembers", LoggerAction, () => {
+                var response = GetResponse($"/rest/v1/Monitor/activities?{getOptions.QueryString()}");
+                LastResponse = JsonConvert.DeserializeObject<dynamic>(response.Content);
+                DumpProfiseeErrors();
+                DumpProfiseeData();
+                return LastResponse.data;
+            });
+        }
+
+        public dynamic? RunConnectBatch(string strategyName, string filter = null, List<string> recordCodes = null) {
+            if (recordCodes == null) recordCodes = new List<string>();
+            var body = new {
+                FilterExpression = filter != null ? filter : "",
+                Codes = recordCodes
+            };
+
+            LoggerAction(LogLevel.Information, $"RunConnectBatch({strategyName}, {filter}, {string.Join(',', recordCodes)})");
+
+            return Wrappers.WrapWithTryCatch("RunConnectBatch", LoggerAction, () => {
+                var response = PostRequest($"/rest/v1/Connect/strategies/{strategyName}/Batch", body);
+                LastResponse = JsonConvert.DeserializeObject<dynamic>(value: response.Content);
+                DumpProfiseeErrors();
+                return LastResponse;
+            });
+        }
+
+        public dynamic? ProcessMatchingActions(string strategyName, ProcessAction processAction = ProcessAction.MatchingOnly) {
+            var actions = new List<string>();
+            switch(processAction) {
+                case ProcessAction.MatchingAndSurvivorship: actions.Add("IncludeSurvivorship"); break;
+                case ProcessAction.SurvivorshipOnly: actions.Add("SurvivorshipOnly"); break;
+                case ProcessAction.ClearPriorResults: actions.Add("ClearPriorResults"); actions.Add("ClearMatchingResults"); break;
+                case ProcessAction.ClearAllPriorResults: actions.Add("ClearAllPriorResults"); actions.Add("ClearMatchingResults"); break;
+            }
+            var body = new {
+                Actions = actions
+            };
+
+            return Wrappers.WrapWithTryCatch("ProcessMatchingActions", LoggerAction, () => {
+                var response = PostRequest($"/rest/v1/Matching/{strategyName}/processActions", body);
+                LastResponse = JsonConvert.DeserializeObject<dynamic>(value: response.Content);
                 DumpProfiseeErrors();
                 return LastResponse;
             });
@@ -201,7 +300,7 @@ namespace Common {
                 var queryString = System.Web.HttpUtility.ParseQueryString(string.Empty);
 
                 if (!string.IsNullOrEmpty(this.Filter))
-                    queryString.Add("filter", this.Filter);
+                    queryString.Add("filter", this.Filter); // HttpUtility.UrlEncode(this.Filter));
                 if (this.OrderBy.Count > 0)
                     queryString.Add("orderby", string.Join(",", this.OrderBy));
                 if (this.Attributes.Count > 0)

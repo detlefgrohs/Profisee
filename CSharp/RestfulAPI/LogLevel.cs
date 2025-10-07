@@ -4,6 +4,6 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace Common {
+namespace Profisee.MDM {
     public enum LogLevel { Debug, Information, Warning, Error }
 }
