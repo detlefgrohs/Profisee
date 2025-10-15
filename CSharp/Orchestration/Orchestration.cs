@@ -119,7 +119,7 @@ namespace Profisee.MDM {
             else
                 LogToProfisee(orchestrationCode, null, LogLevel.Information, $"Orchestration '{orchestrationCode}' completed successfully.");
 
-            return (overallError ? 1 : 0, $"Orchestration '{orchestrationCode}' completed {(overallError ? "with errors" : "successfully")}.");
+            return (overallError ? 0 : 1, $"Orchestration '{orchestrationCode}' completed {(overallError ? "with errors" : "successfully")}.");
         }
 
         private dynamic? Run(string orchestrationCode, string stepCode, string strategyName, string processType, dynamic parameters) {

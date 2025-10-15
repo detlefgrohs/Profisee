@@ -165,6 +165,7 @@ class API() :
 #############################################################################
 # AddressVerification
 #############################################################################    @Common.LogFunction
+    @Common.LogFunction
     def GetAddressVerificationStrategies(self) -> list[dict[str, Any]]:
         return self.CallAPI(RequestOperation.Get, "rest/v1/AddressVerificationStrategies")
     @Common.LogFunction

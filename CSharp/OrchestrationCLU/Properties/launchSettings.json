@@ -2,7 +2,7 @@
   "profiles": {
     "OrchestrationCLU": {
       "commandName": "Project",
-      "commandLineArgs": "--name TEST"
+      "commandLineArgs": "--name Export"
     }
   }
 }

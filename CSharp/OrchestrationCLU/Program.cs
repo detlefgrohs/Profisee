@@ -113,7 +113,6 @@ namespace Profisee.MDM.OrchestrationCLU
                 Console.WriteLine($"Running Process '{commandLineOptions.Name}' {commandLineOptions.ProcessType} with '{commandLineOptions.Settings}'");
 
             }
-
             return 0;
         }
         private static LogLevel MinLogLevel = LogLevel.Information;

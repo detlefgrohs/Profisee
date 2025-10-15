@@ -5,5 +5,5 @@ using System.Text;
 using System.Threading.Tasks;
 
 namespace Profisee.MDM {
-    public enum LogLevel { Debug, Information, Warning, Error }
+    public enum LogLevel { Trace, Debug, Information, Warning, Error }
 }
