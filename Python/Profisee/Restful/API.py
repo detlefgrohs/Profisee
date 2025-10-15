@@ -26,9 +26,9 @@ class API() :
         
         if self.VerifySSL == False : urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
         if not self.ProfiseeUrl.endswith("/") : self.ProfiseeUrl += "/" # Ensure that the URL ends with a /
-        
-    # def GetLastResponse(self) :
-    #     return self.LastResponse
+                
+    def IsSuccessStatusCode(self) -> bool :
+        return self.StatusCode >= 200 and self.StatusCode < 300
         
     def SetResponseHandlers(self) :
         """Creates the ResponseHandlers that is used to handle the responses for the different status_codes."""

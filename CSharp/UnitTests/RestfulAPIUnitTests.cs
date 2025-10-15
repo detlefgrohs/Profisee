@@ -1,4 +1,5 @@
 ﻿using FluentAssertions;
+using Newtonsoft.Json.Linq;
 using Profisee.MDM;
 using System.Diagnostics;
 using static System.Net.Mime.MediaTypeNames;
@@ -54,7 +55,20 @@ namespace Profisee.MDM.UnitTests
             //var response = restfulAPI.RunConnectBatch("SQL Server [DQParent] Export [dbo].[tbl_DQParent]");
 
             var response = restfulAPI.RunConnectBatch("SQL Server [dbo].[tbl_Test] Import [Test]");
-            
+
+            if (restfulAPI.StatusCode == System.Net.HttpStatusCode.BadRequest) {
+                // Check for empty Strategy Error
+                var errors = restfulAPI.Errors;
+
+                if (errors is JArray) {
+                    errors = errors[0];
+                }
+
+
+                foreach (var error in errors) {
+                    var innerError = error;
+                }
+            }
         }
 
         [TestMethod]

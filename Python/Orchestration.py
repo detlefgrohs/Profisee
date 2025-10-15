@@ -22,6 +22,7 @@ class Orchestration:
         self.what_if = False
 
         self.get_orchestration_settings()
+        self.ignore_response_list = [ (400, "no records were found") ]
 
     def get_orchestration_settings(self) -> None:
         self.min_log_level = "debug"
@@ -144,12 +145,12 @@ class Orchestration:
 
         start_process_result = self.start_process(orchestration_code, orchestration_step_code, name, process_type, parameters)
         
-        if not Common.Get(start_process_result, "Error", False):
+        if Common.Get(start_process_result, "Error", False) :
+            run_errored = True            
+        elif not Common.Get(start_process_result, "ContinueToMonitor", False) :
             wait_for_completion_result = self.wait_for_completion(orchestration_code, orchestration_step_code, name, process_type, parameters, since_datetime)
             run_errored = Common.Get(wait_for_completion_result, "Error", False)
-        else:
-            run_errored = True
-
+        
         result = {
             "Orchestration": orchestration_code,
             "OrchestrationStep": orchestration_step_code,
@@ -176,6 +177,12 @@ class Orchestration:
                     "Message": f"Unknown process type '{process_type}' for orchestration step '{name}'."
                 }
 
+    def can_ignore_error(self, response : dict[str, Any]) -> bool:
+        return any(
+            item[0] == Common.Get(response, "StatusCode") and item[1] in Common.Get(response, "Error")
+            for item in self.ignore_response_list
+        )
+
     @LogFunction
     def start_process_connect(self, orchestration_code:str, orchestration_step_code: str, strategy_name: str, parameters: dict[str, Any]) -> dict[str, Any]:
         if self.what_if:
@@ -185,12 +192,21 @@ class Orchestration:
                 "response": None
             }
         
-        response = self.API.RunConnectBatch(strategy_name)        
+        response = self.API.RunConnectBatch(strategy_name, Common.Get(parameters, "Filter"))
+        is_error = False
+        error_was_ignored = False
+        
         if self.API.StatusCode != 200:
-            self.LogToProfisee(orchestration_code, orchestration_step_code, "ERROR", f"Failed to start Connect Batch for strategy '{strategy_name}'. StatusCode: {self.API.StatusCode}, Response: {self.API.LastResponse.text}")
+            if self.can_ignore_error(response) :
+                error_was_ignored = True
+                self.LogToProfisee(orchestration_code, orchestration_step_code, "WARNING", f"Started Connect Batch for strategy '{strategy_name}'. StatusCode: {self.API.StatusCode}, Response: {self.API.LastResponse.text}")
+            else :
+                is_error = True
+                self.LogToProfisee(orchestration_code, orchestration_step_code, "ERROR", f"Failed to start Connect Batch for strategy '{strategy_name}'. StatusCode: {self.API.StatusCode}, Response: {self.API.LastResponse.text}")
             
         return {
-            "Error": self.API.StatusCode != 200,
+            "Error": is_error,
+            "ContinueToMonitor" : error_was_ignored,
             "response": response
         }
                 
@@ -238,16 +254,17 @@ class Orchestration:
         was_successful = False
         
         get_options = GetOptions()
-        get_options.Filter = f"contains([Name], '{name}') and [ActivityType] eq '{self.get_activity_type_for_process_type(process_type, parameters)}' and [Service] eq '{process_type}' and [StartedTime] gt {since_datetime.strftime('%Y-%m-%dT%H:%M:%SZ')}"
+        # get_options.Filter = f"contains([Name], '{name}') and [ActivityType] eq '{self.get_activity_type_for_process_type(process_type, parameters)}' and [Service] eq '{process_type}' and [StartedTime] gt {since_datetime.strftime('%Y-%m-%dT%H:%M:%SZ')}"
+        get_options.Filter = f"[ActivityType] eq '{self.get_activity_type_for_process_type(process_type, parameters)}' and [Service] eq '{process_type}' and [StartedTime] gt {since_datetime.strftime('%Y-%m-%dT%H:%M:%SZ')}"
 
         while True:
             monitor_activities = self.API.GetMonitorActivities(get_options)
 
             # Now apply the name filter since we can't seem to do it as part of the get_options.filter
-            # for index, monitor_activity in enumerate(monitor_activities):
-            #     activity_type = Common.Get(monitor_activity, "Name", "")
-            #     if name not in activity_type:
-            #         del monitor_activities[index]
+            for index, monitor_activity in enumerate(monitor_activities):
+                activity_type = Common.Get(monitor_activity, "Name", "")
+                if name not in activity_type:
+                    del monitor_activities[index]
         
             if monitor_activities:
                 if first_activity_datetime is None:

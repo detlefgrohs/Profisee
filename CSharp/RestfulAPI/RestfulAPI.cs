@@ -104,7 +104,21 @@ namespace Profisee.MDM {
             return this.LastResponse;
         }
         private dynamic? ErrorHandler(RestResponse response, string message) {
-            this.Errors = this.LastResponse;
+            var lastResponse = this.LastResponse;
+            if (lastResponse is JArray) lastResponse = lastResponse[0];
+
+
+            this.Errors = GetPropertyValue(lastResponse, "errors");
+
+            //this.Errors = this.LastResponse;
+
+            // Don't like this, but need to return something consistent...
+            // Will have to see what the other error returns are so that I can return
+            // the proper error structure...
+            if (this.Errors is JArray) {
+                this.Errors = this.Errors[0];
+            }
+
             return new {
                 this.StatusCode,
                 Message = message,
@@ -115,9 +129,9 @@ namespace Profisee.MDM {
         private dynamic? CallAPI(Method requestMethod, string url, dynamic? body = null) {
             // Get the Function that called this for the RequestHandler mapping...
             StackTrace stackTrace = new System.Diagnostics.StackTrace();
-            StackFrame frame = stackTrace.GetFrames()[1];
-            MethodInfo method = (MethodInfo)frame.GetMethod();
-            string methodName = method.Name;
+            StackFrame? frame = stackTrace.GetFrames() != null && stackTrace.GetFrames().Length > 1 ? stackTrace.GetFrames()[1] : null;
+            MethodInfo? method = frame?.GetMethod() as MethodInfo;
+            string methodName = method?.Name ?? "Unknown";
 
             var request = new RestRequest($"{this.ProfiseeUrl}/{url}", requestMethod);
 
@@ -125,33 +139,9 @@ namespace Profisee.MDM {
                 var bodyAsString = Newtonsoft.Json.JsonConvert.SerializeObject(body);
                 RestSharp.RestRequestExtensions.AddStringBody((RestRequest)request, bodyAsString, DataFormat.Json);
             }
-
-            RestResponse response = null;
-
-            var restClient = GetRestClient();
-
-            try {
-                switch (requestMethod) {
-                    case Method.Get:
-                        response = restClient.Get(request);
-                        break;
-                    case Method.Patch:
-                        response = restClient.Patch(request);
-                        break;
-                    case Method.Post:
-                        response = DoIt(request).GetAwaiter().GetResult();
-                        break;
-                    case Method.Delete:
-                        response = restClient.Delete(request);
-                        break;
-                }
-            } catch (HttpRequestException httpRequestException) {
-                
-            }
-            return CheckResponse(methodName, response);
+            return CheckResponse(methodName, CallExecuteAsyncForRequest(request).GetAwaiter().GetResult());
         }
-
-        private async Task<RestResponse> DoIt(RestRequest request) {
+        private async Task<RestResponse> CallExecuteAsyncForRequest(RestRequest request) {
             return await GetRestClient().ExecuteAsync(request);
         }
 
@@ -527,7 +517,7 @@ namespace Profisee.MDM {
         public static object? GetPropertyValue(dynamic obj, string name, object? defaultValue = null) {
             foreach (var prop in obj.Children()) {
                 if (((string)prop.Name).Equals(name, StringComparison.InvariantCultureIgnoreCase)) {
-                    if (prop.Value.GetType().Name.Equals("JArray")) return prop.Value;
+                    if (prop.Value.GetType().Name.Equals("JArray") || prop.Value.GetType().Name.Equals("JObject")) return prop.Value;
                     return prop.Value.Value; // Otherwise is a JToken and we need to get the value of the value...
                 }
             }
