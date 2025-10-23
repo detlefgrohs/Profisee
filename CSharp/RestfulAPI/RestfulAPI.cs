@@ -104,21 +104,7 @@ namespace Profisee.MDM {
             return this.LastResponse;
         }
         private dynamic? ErrorHandler(RestResponse response, string message) {
-            var lastResponse = this.LastResponse;
-            if (lastResponse is JArray) lastResponse = lastResponse[0];
-
-
-            this.Errors = GetPropertyValue(lastResponse, "errors");
-
-            //this.Errors = this.LastResponse;
-
-            // Don't like this, but need to return something consistent...
-            // Will have to see what the other error returns are so that I can return
-            // the proper error structure...
-            if (this.Errors is JArray) {
-                this.Errors = this.Errors[0];
-            }
-
+            this.Errors = this.LastResponse;
             return new {
                 this.StatusCode,
                 Message = message,

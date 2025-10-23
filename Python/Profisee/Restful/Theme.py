@@ -3,7 +3,7 @@ from pyparsing import Any
 
 class Theme :
     def __init__(self) :
-        pass
+        self.Load({})
         
     @classmethod
     def from_Theme(cls, theme_object: dict[str, Any]) -> Any:
@@ -21,21 +21,25 @@ class Theme :
             "accentBg": f"{self.AccentBg[0]},{self.AccentBg[1]},{self.AccentBg[2]}",
             "accentFi": f"{self.AccentFi[0]},{self.AccentFi[1]},{self.AccentFi[2]}",
             "selectedBg": f"{self.SelectedBg[0]},{self.SelectedBg[1]},{self.SelectedBg[2]}",
-            "hyperlink": f"{self.Hyperlink[0]},{self.Hyperlink[1]},{self.Hyperlink[2]}"
+            "hyperlink": f"{self.Hyperlink[0]},{self.Hyperlink[1]},{self.Hyperlink[2]}",
+            "navStart": f"{self.NavStart[0]},{self.NavStart[1]},{self.NavStart[2]}",
+            "navEnd": f"{self.NavEnd[0]},{self.NavEnd[1]},{self.NavEnd[2]}"
         }
         
     def Load(self, theme_object:dict[str, Any]) -> Any:
         self.BannerPrimary = Theme.parse_rgb(Common.Get(theme_object, "bannerPrimary", "255,255,255"))
         self.BannerFi = Theme.parse_rgb(Common.Get(theme_object, "bannerFi", "27, 49, 65"))
-        self.BannerSecondary = Theme.parse_rgb(Common.Get(theme_object, "bannerSecondary", "0, 250, 221"))
+        self.BannerSecondary = Theme.parse_rgb(Common.Get(theme_object, "bannerSecondary", "32, 162, 223"))
         self.ContentPrimaryBg = Theme.parse_rgb(Common.Get(theme_object, "contentPrimaryBg", "255, 255, 255"))
         self.ContentPrimaryFi = Theme.parse_rgb(Common.Get(theme_object, "contentPrimaryFi", "107, 114, 128"))
-        self.ContentSecondaryBg = Theme.parse_rgb(Common.Get(theme_object, "contentSecondaryBg", "242, 244, 245"))
+        self.ContentSecondaryBg = Theme.parse_rgb(Common.Get(theme_object, "contentSecondaryBg", "243, 245, 246"))
         self.ContentSecondaryFi = Theme.parse_rgb(Common.Get(theme_object, "contentSecondaryFi", "27, 49, 65"))
-        self.AccentBg = Theme.parse_rgb(Common.Get(theme_object, "accentBg", "19, 97, 134"))
-        self.AccentFi = Theme.parse_rgb(Common.Get(theme_object, "accentFi", "255, 255, 255"))
-        self.SelectedBg = Theme.parse_rgb(Common.Get(theme_object, "selectedBg", "211, 237, 249"))
+        self.AccentBg = Theme.parse_rgb(Common.Get(theme_object, "accentBg", "255, 255, 255"))
+        self.AccentFi = Theme.parse_rgb(Common.Get(theme_object, "accentFi", "44, 47, 53"))
+        self.SelectedBg = Theme.parse_rgb(Common.Get(theme_object, "selectedBg", "210, 237, 249"))
         self.Hyperlink = Theme.parse_rgb(Common.Get(theme_object, "hyperlink", "19, 98, 134"))
+        self.NavStart = Theme.parse_rgb(Common.Get(theme_object, "navStart", "16, 82, 112"))
+        self.NavEnd = Theme.parse_rgb(Common.Get(theme_object, "navEnd", "0, 135, 197"))
         return self
     
     @staticmethod

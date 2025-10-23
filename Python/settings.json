@@ -12,5 +12,10 @@
         "ProfiseeUrl" : "https://corpltr16.corp.profisee.com/profisee25r2",
         "ClientId" : "0741a8cbebe54c2eae3d3b5cc4f49600",
         "VerifySSL": false
+    },
+    "SK-Dev" : {
+        "ProfiseeUrl" : "https://profiseecloud.com/smoothiekingdev",
+        "ClientId" : "f4061059a624412789ec208a4e21a58c",
+        "VerifySSL": false
     }
 }

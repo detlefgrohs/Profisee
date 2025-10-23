@@ -60,14 +60,7 @@ namespace Profisee.MDM.UnitTests
                 // Check for empty Strategy Error
                 var errors = restfulAPI.Errors;
 
-                if (errors is JArray) {
-                    errors = errors[0];
-                }
 
-
-                foreach (var error in errors) {
-                    var innerError = error;
-                }
             }
         }
 
@@ -80,7 +73,7 @@ namespace Profisee.MDM.UnitTests
 
             //response = restfulAPI.ProcessMatchingActions("MatchingTest", ProcessAction.SurvivorshipOnly);
 
-            response = restfulAPI.ProcessMatchingActions("MatchingTest", ProcessAction.MatchingAndSurvivorship);
+            // response = restfulAPI.ProcessMatchingActions("MatchingTest", ProcessAction.MatchingAndSurvivorship);
 
             //response = restfulAPI.ProcessMatchingActions("MatchingTest", ProcessAction.ClearPriorResults);
         }
