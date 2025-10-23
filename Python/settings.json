@@ -15,7 +15,7 @@
     },
     "SK-Dev" : {
         "ProfiseeUrl" : "https://profiseecloud.com/smoothiekingdev",
-        "ClientId" : "f4061059a624412789ec208a4e21a58c",
+        "ClientId" : "{ReplaceWithYourClientId}",
         "VerifySSL": false
     }
 }
